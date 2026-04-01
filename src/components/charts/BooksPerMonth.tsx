@@ -24,6 +24,9 @@ export function BooksPerMonth({ monthly }: Props) {
         label: 'Reading Hours',
         data: monthly.map(m => msToHours(m.totalMs)),
         backgroundColor: 'rgba(10, 132, 255, 0.7)',
+        hoverBackgroundColor: 'rgba(10, 132, 255, 0.9)',
+        hoverBorderColor: 'rgba(100, 210, 255, 1)',
+        hoverBorderWidth: 2,
         borderRadius: 4,
         yAxisID: 'y',
         order: 2,
@@ -35,8 +38,11 @@ export function BooksPerMonth({ monthly }: Props) {
         borderColor: 'rgba(48, 209, 88, 1)',
         backgroundColor: 'rgba(48, 209, 88, 0.1)',
         pointRadius: 4,
-        pointHoverRadius: 6,
+        pointHoverRadius: 8,
+        pointHoverBorderWidth: 3,
+        pointHoverBackgroundColor: '#ffffff',
         borderWidth: 2,
+        hitRadius: 12,
         tension: 0.3,
         yAxisID: 'y1',
         order: 1,
@@ -48,6 +54,9 @@ export function BooksPerMonth({ monthly }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     ...getSharedChartInteraction('index'),
+    onHover: (_event: any, elements: any[], chart: any) => {
+      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
     plugins: {
       legend: {
         position: 'top' as const,

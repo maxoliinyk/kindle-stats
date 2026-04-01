@@ -17,6 +17,8 @@ export function DeviceBreakdown({ breakdown }: Props) {
       data: breakdown.map(d => Math.round(d.totalMs / 60000)),
       backgroundColor: CHART_COLORS.slice(0, breakdown.length),
       borderWidth: 0,
+      hoverBorderColor: 'rgba(255, 255, 255, 0.95)',
+      hoverBorderWidth: 2,
       hoverOffset: 8,
     }],
   };
@@ -26,6 +28,9 @@ export function DeviceBreakdown({ breakdown }: Props) {
     maintainAspectRatio: true,
     cutout: '60%',
     ...getSharedChartInteraction('nearest'),
+    onHover: (_event: any, elements: any[], chart: any) => {
+      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
     plugins: {
       legend: {
         position: 'bottom' as const,

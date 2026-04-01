@@ -29,6 +29,14 @@ export function TimeOfDay({ hourly }: Props) {
         if (h.hour >= 18 && h.hour < 22) return 'rgba(191, 82, 242, 0.7)';
         return 'rgba(10, 132, 255, 0.7)';
       }),
+      hoverBackgroundColor: hourly.map(h => {
+        if (h.hour >= 6 && h.hour < 12) return 'rgba(255, 159, 10, 0.9)';
+        if (h.hour >= 12 && h.hour < 18) return 'rgba(255, 69, 58, 0.9)';
+        if (h.hour >= 18 && h.hour < 22) return 'rgba(191, 82, 242, 0.9)';
+        return 'rgba(10, 132, 255, 0.9)';
+      }),
+      hoverBorderColor: 'rgba(255, 255, 255, 0.95)',
+      hoverBorderWidth: 2,
       borderRadius: 4,
       barThickness: 14,
     }],
@@ -38,6 +46,9 @@ export function TimeOfDay({ hourly }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     ...getSharedChartInteraction('nearest'),
+    onHover: (_event: any, elements: any[], chart: any) => {
+      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
     plugins: {
       legend: { display: false },
       tooltip: {

@@ -39,12 +39,66 @@ export function ReadingTimePerBook({ books }: Props) {
     interaction: { mode: 'nearest' as const, intersect: true },
     hover: { mode: 'nearest' as const, intersect: true },
     onHover: (event: any, elements: any[], chart: any) => {
+      const nativeEvent = event?.native as MouseEvent | undefined;
+      if (nativeEvent) {
+        chart.$hoverClientX = nativeEvent.clientX;
+        chart.$hoverClientY = nativeEvent.clientY;
+      }
       chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
     },
     plugins: {
       legend: { display: false },
       tooltip: {
         ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
+        external: (context: any) => {
+          const { chart, tooltip } = context;
+          let tooltipEl = document.getElementById('chartjs-tooltip-custom');
+
+          if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'chartjs-tooltip-custom';
+            tooltipEl.className = 'heatmap-cursor-tooltip';
+            document.body.appendChild(tooltipEl);
+          }
+
+          if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = '0';
+            tooltipEl.style.visibility = 'hidden';
+            return;
+          }
+
+          const titleLines = tooltip.title || [];
+          const bodyLines = tooltip.body?.map((b: any) => b.lines) || [];
+          const footerLines = tooltip.footer || [];
+          let innerHtml = '';
+
+          titleLines.forEach((title: string) => {
+            innerHtml += `<span class="heatmap-cursor-tooltip-date">${title}</span>`;
+          });
+          bodyLines.forEach((body: string[]) => {
+            body.forEach(line => {
+              innerHtml += `<span>${line}</span>`;
+            });
+          });
+          if (footerLines.length > 0) {
+            innerHtml += `<div style="height: 4px;"></div>`;
+            footerLines.forEach((footer: string) => {
+              innerHtml += `<span style="color: var(--text-secondary); opacity: 0.9;">${footer}</span>`;
+            });
+          }
+
+          tooltipEl.innerHTML = innerHtml;
+          tooltipEl.style.opacity = '1';
+          tooltipEl.style.visibility = 'visible';
+          tooltipEl.style.position = 'fixed';
+          tooltipEl.style.pointerEvents = 'none';
+
+          const fallback = chart.canvas.getBoundingClientRect();
+          const x = chart.$hoverClientX ?? fallback.left + tooltip.caretX;
+          const y = chart.$hoverClientY ?? fallback.top + tooltip.caretY;
+          tooltipEl.style.left = x + 'px';
+          tooltipEl.style.top = y + 'px';
+        },
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;

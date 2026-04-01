@@ -45,9 +45,12 @@ export function ReadingPace({ daily }: Props) {
       backgroundColor: `rgba(${accent === '#0A84FF' || accent === '#007AFF' ? '10, 132, 255' : '0, 122, 255'}, 0.1)`,
       fill: true,
       tension: 0.4,
-      pointRadius: 3,
-      pointHoverRadius: 6,
+      pointRadius: 4,
+      pointHoverRadius: 8,
+      pointHoverBorderWidth: 3,
+      pointHoverBackgroundColor: '#ffffff',
       borderWidth: 2,
+      hitRadius: 12,
     }],
   };
 
@@ -55,6 +58,9 @@ export function ReadingPace({ daily }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     ...getSharedChartInteraction('index'),
+    onHover: (_event: any, elements: any[], chart: any) => {
+      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
