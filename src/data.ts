@@ -233,6 +233,16 @@ export function formatDurationExact(ms: number): string {
   return parts.join(' ');
 }
 
+/** Exact reading time in hours and minutes (without seconds). */
+export function formatDurationExactHM(ms: number): string {
+  if (ms <= 0) return '0m';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 /** Minutes with fractional part for hover (exact from ms). */
 export function formatMinutesExact(ms: number): string {
   if (ms <= 0) return '0 min';

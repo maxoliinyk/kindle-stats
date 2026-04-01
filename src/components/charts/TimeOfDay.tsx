@@ -1,5 +1,5 @@
 import { Bar } from 'react-chartjs-2';
-import { formatMinutesExact, msToMinutes } from '../../data';
+import { msToMinutes } from '../../data';
 import type { HourlyReading } from '../../types';
 import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function TimeOfDay({ hourly }: Props) {
-  const { textColor, gridColor, fontFamily } = useChartTheme();
+  const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
   const totalMs = hourly.reduce((acc, h) => acc + h.totalMs, 0);
   const peakHourData = [...hourly].sort((a, b) => b.totalMs - a.totalMs)[0];
 
@@ -41,10 +41,7 @@ export function TimeOfDay({ hourly }: Props) {
     plugins: {
       legend: { display: false },
       tooltip: {
-        ...getSharedTooltip(textColor, fontFamily),
-        enabled: true,
-        mode: 'nearest' as const,
-        intersect: false,
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -54,7 +51,7 @@ export function TimeOfDay({ hourly }: Props) {
             const h = hourly[ctx.dataIndex];
             const share = totalMs > 0 ? Math.round((h.totalMs / totalMs) * 100) : 0;
             return [
-              `Reading: ${formatMinutesExact(h.totalMs)}`,
+              `Reading: ${Math.round(h.totalMs / 60000)} min`,
               `Sessions: ${h.sessionCount}`,
               `Share: ${share}%`,
             ];

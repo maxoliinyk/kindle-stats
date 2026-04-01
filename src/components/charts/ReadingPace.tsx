@@ -1,5 +1,5 @@
 import { Line } from 'react-chartjs-2';
-import { formatDurationExact, formatMinutesExact, msToMinutes } from '../../data';
+import { msToMinutes } from '../../data';
 import type { DailyReading } from '../../types';
 import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function ReadingPace({ daily }: Props) {
-  const { textColor, gridColor, fontFamily, accent } = useChartTheme();
+  const { textColor, gridColor, fontFamily, accent, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
 
   // Compute weekly rolling average
   const withDays = daily.filter(d => d.totalMs > 0);
@@ -58,10 +58,7 @@ export function ReadingPace({ daily }: Props) {
     plugins: {
       legend: { display: false },
       tooltip: {
-        ...getSharedTooltip(textColor, fontFamily),
-        enabled: true,
-        mode: 'index' as const,
-        intersect: false,
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -71,14 +68,13 @@ export function ReadingPace({ daily }: Props) {
           label: (ctx: any) => {
             const week = weeks[ctx.dataIndex];
             const prevWeek = weeks[ctx.dataIndex - 1];
-            const changeMin =
-              prevWeek != null ? (week.avgMs - prevWeek.avgMs) / 60000 : null;
+            const changeMin = prevWeek != null ? Math.round((week.avgMs - prevWeek.avgMs) / 60000) : null;
             return [
-              `Avg/day: ${formatMinutesExact(week.avgMs)}`,
-              `Weekly total: ${formatDurationExact(week.totalMs)}`,
+              `Avg/day: ${Math.round(week.avgMs / 60000)} min`,
+              `Weekly total: ${Math.round(week.totalMs / 60000)} min`,
               changeMin === null
                 ? 'Change vs prior week: n/a'
-                : `Change vs prior week: ${changeMin >= 0 ? '+' : ''}${changeMin.toFixed(2)} min/day`,
+                : `Change vs prior week: ${changeMin >= 0 ? '+' : ''}${changeMin} min/day`,
             ];
           },
         },

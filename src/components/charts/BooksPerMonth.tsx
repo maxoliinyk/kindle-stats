@@ -1,5 +1,5 @@
 import { Bar } from 'react-chartjs-2';
-import { formatDurationExact, msToHours } from '../../data';
+import { formatDurationExactHM, msToHours } from '../../data';
 import type { MonthlyReading } from '../../types';
 import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function BooksPerMonth({ monthly }: Props) {
-  const { textColor, gridColor, fontFamily } = useChartTheme();
+  const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
   const bestMonth = [...monthly].sort((a, b) => b.totalMs - a.totalMs)[0];
 
   const labels = monthly.map(m => {
@@ -59,10 +59,7 @@ export function BooksPerMonth({ monthly }: Props) {
         },
       },
       tooltip: {
-        ...getSharedTooltip(textColor, fontFamily),
-        enabled: true,
-        mode: 'index' as const,
-        intersect: false,
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -70,14 +67,13 @@ export function BooksPerMonth({ monthly }: Props) {
           },
           label: (ctx: any) => {
             const entry = monthly[ctx.dataIndex];
-            if (ctx.dataset.label === 'Reading Hours') {
-              const perBookH = entry.uniqueBooks > 0 ? msToHours(entry.totalMs) / entry.uniqueBooks : 0;
-              return [
-                `Total reading: ${formatDurationExact(entry.totalMs)}`,
-                perBookH > 0 ? `Hours per book: ${perBookH.toFixed(2)}` : 'Hours per book: —',
-              ];
-            }
-            return [`Unique books finished: ${entry.uniqueBooks}`];
+            const totalMinutes = Math.round(entry.totalMs / 60000);
+            const perBookMinutes = entry.uniqueBooks > 0 ? Math.round(totalMinutes / entry.uniqueBooks) : 0;
+            return [
+              `Total reading: ${formatDurationExactHM(entry.totalMs)} (${totalMinutes} min)`,
+              `Unique books: ${entry.uniqueBooks}`,
+              entry.uniqueBooks > 0 ? `Avg per book: ${perBookMinutes} min` : 'Avg per book: —',
+            ];
           },
         },
       },

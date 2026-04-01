@@ -1,20 +1,27 @@
 import { useMemo } from 'react';
 import type { TooltipOptions } from 'chart.js';
+import { useTheme } from '../../hooks/useTheme';
 
 // Use CSS custom properties for chart colors
 export function useChartTheme() {
+  const { resolved } = useTheme();
+
   return useMemo(() => {
     const style = getComputedStyle(document.documentElement);
+    const isDark = resolved === 'dark';
     return {
       textColor: style.getPropertyValue('--chart-text').trim() || '#8e8e93',
-      gridColor: style.getPropertyValue('--chart-grid').trim() || 'rgba(255,255,255,0.06)',
-      accent: style.getPropertyValue('--accent').trim() || '#0A84FF',
-      accentSecondary: style.getPropertyValue('--accent-secondary').trim() || '#30D158',
-      accentTertiary: style.getPropertyValue('--accent-tertiary').trim() || '#FF9F0A',
-      accentQuaternary: style.getPropertyValue('--accent-quaternary').trim() || '#BF5AF2',
+      gridColor: style.getPropertyValue('--chart-grid').trim() || (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
+      accent: style.getPropertyValue('--accent').trim() || (isDark ? '#0A84FF' : '#007AFF'),
+      accentSecondary: style.getPropertyValue('--accent-secondary').trim() || (isDark ? '#30D158' : '#34C759'),
+      accentTertiary: style.getPropertyValue('--accent-tertiary').trim() || (isDark ? '#FF9F0A' : '#FF9500'),
+      accentQuaternary: style.getPropertyValue('--accent-quaternary').trim() || (isDark ? '#BF5AF2' : '#AF52DE'),
       fontFamily: "'Inter', sans-serif",
+      tooltipBg: isDark ? 'rgba(28, 28, 30, 0.94)' : 'rgba(255, 255, 255, 0.98)',
+      tooltipText: isDark ? '#f5f5f7' : '#1d1d1f',
+      tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.15)',
     };
-  }, []);
+  }, [resolved]);
 }
 
 export function getSharedChartInteraction(mode: 'index' | 'nearest' = 'nearest') {
@@ -24,16 +31,78 @@ export function getSharedChartInteraction(mode: 'index' | 'nearest' = 'nearest')
   };
 }
 
+export const externalTooltipHandler = (context: any) => {
+  const { chart, tooltip } = context;
+  let tooltipEl = document.getElementById('chartjs-tooltip-custom');
+
+  if (!tooltipEl) {
+    tooltipEl = document.createElement('div');
+    tooltipEl.id = 'chartjs-tooltip-custom';
+    tooltipEl.className = 'heatmap-cursor-tooltip';
+    document.body.appendChild(tooltipEl);
+  }
+
+  if (tooltip.opacity === 0) {
+    tooltipEl.style.opacity = '0';
+    tooltipEl.style.visibility = 'hidden';
+    return;
+  }
+
+  if (tooltip.body) {
+    const titleLines = tooltip.title || [];
+    const bodyLines = tooltip.body.map((b: any) => b.lines);
+    const footerLines = tooltip.footer || [];
+
+    let innerHtml = '';
+
+    titleLines.forEach((title: string) => {
+      innerHtml += `<span class="heatmap-cursor-tooltip-date">${title}</span>`;
+    });
+
+    bodyLines.forEach((body: string[], _i: number) => {
+      if (Array.isArray(body)) {
+        body.forEach(line => {
+          innerHtml += `<span>${line}</span>`;
+        });
+      } else {
+        innerHtml += `<span>${body}</span>`;
+      }
+    });
+
+    if (footerLines.length > 0) {
+      innerHtml += `<div style="height: 4px;"></div>`;
+      footerLines.forEach((footer: string) => {
+        innerHtml += `<span style="color: var(--text-secondary); opacity: 0.9;">${footer}</span>`;
+      });
+    }
+
+    tooltipEl.innerHTML = innerHtml;
+  }
+
+  const { left: canvasLeft, top: canvasTop } = chart.canvas.getBoundingClientRect();
+
+  tooltipEl.style.opacity = '1';
+  tooltipEl.style.visibility = 'visible';
+  tooltipEl.style.position = 'fixed';
+  tooltipEl.style.pointerEvents = 'none';
+  tooltipEl.style.left = canvasLeft + tooltip.caretX + 'px';
+  tooltipEl.style.top = canvasTop + tooltip.caretY + 'px';
+};
+
 export function getSharedTooltip(
+  bgColor: string,
   textColor: string,
+  borderColor: string,
   fontFamily: string,
 ): Partial<TooltipOptions<'bar' | 'line' | 'doughnut'>> {
   return {
+    enabled: false,
+    external: externalTooltipHandler,
     position: 'nearest',
-    backgroundColor: 'rgba(28, 28, 30, 0.94)',
-    titleColor: '#f5f5f7',
-    bodyColor: '#f5f5f7',
-    borderColor: 'rgba(255, 255, 255, 0.16)',
+    backgroundColor: bgColor,
+    titleColor: textColor,
+    bodyColor: textColor,
+    borderColor: borderColor,
     borderWidth: 1,
     displayColors: true,
     cornerRadius: 8,

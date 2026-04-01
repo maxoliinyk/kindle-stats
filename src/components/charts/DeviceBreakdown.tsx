@@ -1,5 +1,5 @@
 import { Doughnut } from 'react-chartjs-2';
-import { formatDuration } from '../../data';
+import { formatDuration, formatDurationExactHM } from '../../data';
 import { CHART_COLORS, getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function DeviceBreakdown({ breakdown }: Props) {
-  const { textColor, fontFamily } = useChartTheme();
+  const { textColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
   const totalMs = breakdown.reduce((acc, item) => acc + item.totalMs, 0);
   const topDevice = breakdown[0];
 
@@ -38,12 +38,16 @@ export function DeviceBreakdown({ breakdown }: Props) {
         },
       },
       tooltip: {
-        ...getSharedTooltip(textColor, fontFamily),
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
         callbacks: {
+          title: (items: any[]) => {
+            const idx = items[0]?.dataIndex ?? 0;
+            return breakdown[idx]?.device ?? '';
+          },
           label: (ctx: any) => {
             const item = breakdown[ctx.dataIndex];
             const share = totalMs > 0 ? Math.round((item.totalMs / totalMs) * 100) : 0;
-            return [`${item.device}: ${formatDuration(item.totalMs)}`, `Share: ${share}%`];
+            return [`Reading time: ${formatDurationExactHM(item.totalMs)}`, `Share: ${share}%`];
           },
         },
       },
