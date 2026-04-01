@@ -1,0 +1,108 @@
+export interface ReadingSession {
+  productName: string;
+  personalDocumentId: string;
+  asin: string;
+  startTime: Date | null;
+  endTime: Date;
+  totalReadingMs: number;
+  readingMarketplace: string;
+}
+
+export interface DeviceSession {
+  startTimestamp: Date | null;
+  endTimestamp: Date;
+  asin: string;
+  deviceFamily: string;
+  contentType: string;
+  totalReadingMs: number;
+  numberOfPageFlips: number;
+}
+
+export interface CompletedTitle {
+  personalDocumentId: string;
+  productName: string;
+  date: string;
+  type: string;
+}
+
+export interface ReadingGoal {
+  goalId: string;
+  goalValue: number;
+  year: number;
+  hasBeenCongratulated: boolean;
+}
+
+export interface HighlightAction {
+  timestamp: Date;
+  asin: string;
+  action: string;
+  highlightColor: string;
+  numberOfWords: number;
+  deviceFamily: string;
+}
+
+export interface BookStats {
+  name: string;
+  id: string;
+  totalReadingMs: number;
+  sessionCount: number;
+  firstRead: Date;
+  lastRead: Date;
+}
+
+export interface DailyReading {
+  date: string;
+  totalMs: number;
+}
+
+export interface HourlyReading {
+  hour: number;
+  totalMs: number;
+  sessionCount: number;
+}
+
+export interface MonthlyReading {
+  month: string;
+  totalMs: number;
+  uniqueBooks: number;
+}
+
+export interface StreakInfo {
+  currentStreak: number;
+  longestStreak: number;
+  totalDaysRead: number;
+}
+
+export interface TopSession {
+  productName: string;
+  date: Date;
+  durationMs: number;
+}
+
+export interface ParsedData {
+  readingSessions: ReadingSession[];
+  deviceSessions: DeviceSession[];
+  readingDays: string[];
+  completedTitles: CompletedTitle[];
+  goals: ReadingGoal[];
+  highlights: HighlightAction[];
+}
+
+export interface ProcessedStats {
+  bookStats: BookStats[];
+  dailyReadings: DailyReading[];
+  hourlyReadings: HourlyReading[];
+  monthlyReadings: MonthlyReading[];
+  streakInfo: StreakInfo;
+  topSessions: TopSession[];
+  deviceBreakdown: { device: string; totalMs: number }[];
+  goals: ReadingGoal[];
+  completedTitles: CompletedTitle[];
+  totalReadingMs: number;
+  totalBooks: number;
+  totalDaysActive: number;
+  avgPerDayMs: number;
+  avgPerSessionMs: number;
+}
+
+export type ThemeMode = 'auto' | 'light' | 'dark';
