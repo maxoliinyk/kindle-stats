@@ -1,5 +1,5 @@
 import { Line } from 'react-chartjs-2';
-import { formatDuration, msToMinutes } from '../../data';
+import { formatDurationExact, formatMinutesExact, msToMinutes } from '../../data';
 import type { DailyReading } from '../../types';
 import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
@@ -59,6 +59,9 @@ export function ReadingPace({ daily }: Props) {
       legend: { display: false },
       tooltip: {
         ...getSharedTooltip(textColor, fontFamily),
+        enabled: true,
+        mode: 'index' as const,
+        intersect: false,
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -68,11 +71,14 @@ export function ReadingPace({ daily }: Props) {
           label: (ctx: any) => {
             const week = weeks[ctx.dataIndex];
             const prevWeek = weeks[ctx.dataIndex - 1];
-            const change = prevWeek ? Math.round(msToMinutes(week.avgMs) - msToMinutes(prevWeek.avgMs)) : null;
+            const changeMin =
+              prevWeek != null ? (week.avgMs - prevWeek.avgMs) / 60000 : null;
             return [
-              `Avg/day: ${ctx.parsed.y} min`,
-              `Weekly total: ${formatDuration(week.totalMs)}`,
-              change === null ? 'Change vs prior: n/a' : `Change vs prior: ${change >= 0 ? '+' : ''}${change} min/day`,
+              `Avg/day: ${formatMinutesExact(week.avgMs)}`,
+              `Weekly total: ${formatDurationExact(week.totalMs)}`,
+              changeMin === null
+                ? 'Change vs prior week: n/a'
+                : `Change vs prior week: ${changeMin >= 0 ? '+' : ''}${changeMin.toFixed(2)} min/day`,
             ];
           },
         },
@@ -96,6 +102,7 @@ export function ReadingPace({ daily }: Props) {
       },
     },
   };
+
 
   return (
     <>

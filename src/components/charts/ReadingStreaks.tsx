@@ -44,7 +44,14 @@ export function ReadingStreaks({ streaks }: Props) {
         >
           <div className="streak-value">{card.value}</div>
           <div className="streak-label">{card.label}</div>
-          {active === card.id && <div className="streak-detail">{card.detail}</div>}
+          <div className="streak-detail-slot">
+            <p
+              className={`streak-detail ${active === card.id ? 'streak-detail-visible' : ''}`}
+              aria-hidden={active !== card.id}
+            >
+              {card.detail}
+            </p>
+          </div>
         </div>
       ))}
     </div>

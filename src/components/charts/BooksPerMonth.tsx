@@ -1,5 +1,5 @@
 import { Bar } from 'react-chartjs-2';
-import { msToHours } from '../../data';
+import { formatDurationExact, msToHours } from '../../data';
 import type { MonthlyReading } from '../../types';
 import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
@@ -60,6 +60,9 @@ export function BooksPerMonth({ monthly }: Props) {
       },
       tooltip: {
         ...getSharedTooltip(textColor, fontFamily),
+        enabled: true,
+        mode: 'index' as const,
+        intersect: false,
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -68,10 +71,13 @@ export function BooksPerMonth({ monthly }: Props) {
           label: (ctx: any) => {
             const entry = monthly[ctx.dataIndex];
             if (ctx.dataset.label === 'Reading Hours') {
-              const perBook = entry.uniqueBooks > 0 ? msToHours(entry.totalMs) / entry.uniqueBooks : 0;
-              return [`Hours: ${ctx.parsed.y}`, `Hours/book: ${perBook.toFixed(1)}`];
+              const perBookH = entry.uniqueBooks > 0 ? msToHours(entry.totalMs) / entry.uniqueBooks : 0;
+              return [
+                `Total reading: ${formatDurationExact(entry.totalMs)}`,
+                perBookH > 0 ? `Hours per book: ${perBookH.toFixed(2)}` : 'Hours per book: —',
+              ];
             }
-            return [`Unique books: ${entry.uniqueBooks}`];
+            return [`Unique books finished: ${entry.uniqueBooks}`];
           },
         },
       },
@@ -97,6 +103,7 @@ export function BooksPerMonth({ monthly }: Props) {
       },
     },
   };
+
 
   return (
     <>

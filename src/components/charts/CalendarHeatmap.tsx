@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { formatDuration } from '../../data';
+import { useMemo, useState, useCallback } from 'react';
+import { formatDuration, formatDurationExact } from '../../data';
 import type { DailyReading } from '../../types';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
 export function CalendarHeatmap({ daily }: Props) {
   const [activeDate, setActiveDate] = useState<string | null>(null);
   const [pinnedDate, setPinnedDate] = useState<string | null>(null);
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
 
   const { cells, months, maxMs } = useMemo(() => {
     const dayMap = new Map<string, number>();
@@ -79,8 +80,28 @@ export function CalendarHeatmap({ daily }: Props) {
   const selectedLevel = selectedCell ? getLevel(selectedCell.ms) : 0;
   const selectedPercentile = selectedCell ? getPercentile(selectedCell.ms) : 0;
 
+  const hoverCell = activeDate ? cells.find(c => c.date === activeDate) : null;
+  const hoverPercentile = hoverCell ? getPercentile(hoverCell.ms) : 0;
+  const showFloatTip = !pinnedDate && hoverCell && pointer;
+
+  const handleWrapperMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!pinnedDate && activeDate) {
+        setPointer({ x: e.clientX, y: e.clientY });
+      }
+    },
+    [pinnedDate, activeDate],
+  );
+
+  const handleWrapperLeave = useCallback(() => {
+    if (!pinnedDate) {
+      setActiveDate(null);
+      setPointer(null);
+    }
+  }, [pinnedDate]);
+
   return (
-    <div>
+    <div className="heatmap-root">
       {months.length > 0 && (
         <div className="heatmap-months">
           {months.map(month => (
@@ -88,7 +109,28 @@ export function CalendarHeatmap({ daily }: Props) {
           ))}
         </div>
       )}
-      <div className="heatmap-wrapper">
+
+      {pinnedDate && selectedCell && (
+        <div className="heatmap-pinned-bar" aria-live="polite">
+          <span className="heatmap-details-title">
+            {new Date(selectedCell.date).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+          <span>{selectedCell.ms > 0 ? formatDurationExact(selectedCell.ms) : 'No reading'}</span>
+          <span>Level {selectedLevel}/4</span>
+          <span>{selectedPercentile > 0 ? `Top ${100 - selectedPercentile + 1}% day` : 'Not ranked'}</span>
+          <span className="heatmap-pin">Pinned — click cell again to clear</span>
+        </div>
+      )}
+
+      <div
+        className="heatmap-wrapper"
+        onMouseMove={handleWrapperMove}
+        onMouseLeave={handleWrapperLeave}
+      >
         <div className="heatmap-grid">
           {cells.map((cell, i) => (
             <div
@@ -96,12 +138,15 @@ export function CalendarHeatmap({ daily }: Props) {
               className="heatmap-cell"
               data-level={getLevel(cell.ms)}
               data-active={selectedDate === cell.date ? 'true' : 'false'}
-              title={`${cell.date}: ${cell.ms > 0 ? formatDuration(cell.ms) : 'No reading'}`}
               tabIndex={0}
               role="button"
               aria-label={`${cell.date}, ${cell.ms > 0 ? formatDuration(cell.ms) : 'No reading'}`}
-              onMouseEnter={() => !pinnedDate && setActiveDate(cell.date)}
-              onMouseLeave={() => !pinnedDate && setActiveDate(null)}
+              onMouseEnter={e => {
+                if (!pinnedDate) {
+                  setActiveDate(cell.date);
+                  setPointer({ x: e.clientX, y: e.clientY });
+                }
+              }}
               onFocus={() => !pinnedDate && setActiveDate(cell.date)}
               onBlur={() => !pinnedDate && setActiveDate(null)}
               onClick={() => setPinnedDate(prev => (prev === cell.date ? null : cell.date))}
@@ -109,21 +154,32 @@ export function CalendarHeatmap({ daily }: Props) {
           ))}
         </div>
       </div>
-      <div className="heatmap-details" aria-live="polite">
-        {selectedCell ? (
-          <>
-            <span className="heatmap-details-title">
-              {new Date(selectedCell.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </span>
-            <span>{selectedCell.ms > 0 ? formatDuration(selectedCell.ms) : 'No reading'}</span>
-            <span>Level {selectedLevel}/4</span>
-            <span>{selectedPercentile > 0 ? `Top ${100 - selectedPercentile + 1}% day` : 'Not ranked'}</span>
-            {pinnedDate && <span className="heatmap-pin">Pinned (click cell again to unpin)</span>}
-          </>
-        ) : (
-          <span>No data</span>
-        )}
-      </div>
+
+      {showFloatTip && hoverCell && pointer && (
+        <div
+          className="heatmap-cursor-tooltip"
+          role="tooltip"
+          style={{
+            left: pointer.x,
+            top: pointer.y,
+          }}
+        >
+          <span className="heatmap-cursor-tooltip-date">
+            {new Date(hoverCell.date).toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+          <span>{hoverCell.ms > 0 ? formatDurationExact(hoverCell.ms) : 'No reading'}</span>
+          <span>Level {getLevel(hoverCell.ms)}/4</span>
+          <span>
+            {hoverPercentile > 0 ? `Top ${100 - hoverPercentile + 1}% day` : 'Not ranked'}
+          </span>
+        </div>
+      )}
+
       <div className="heatmap-legend">
         <span>Less</span>
         <div className="heatmap-legend-cell" style={{ background: 'var(--heatmap-empty)' }} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDuration } from '../../data';
+import { formatDurationExact } from '../../data';
 import type { TopSession } from '../../types';
 
 interface Props {
@@ -32,13 +32,13 @@ export function LongestSessions({ sessions }: Props) {
               })}
             </div>
           </div>
-          <div className="session-duration">{formatDuration(s.durationMs)}</div>
+          <div className="session-duration">{formatDurationExact(s.durationMs)}</div>
           {activeIndex === i && (
-            <div className="chart-hover-detail">
+            <div className="session-hover-detail">
               <span>Rank #{i + 1}</span>
-              <span>{s.productName}</span>
+              <span className="session-hover-title">{s.productName}</span>
               <span>{s.date.toLocaleDateString('en-US')}</span>
-              <span>Duration: {formatDuration(s.durationMs)}</span>
+              <span>Duration: {formatDurationExact(s.durationMs)}</span>
             </div>
           )}
         </div>

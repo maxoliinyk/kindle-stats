@@ -219,6 +219,28 @@ export function formatDuration(ms: number): string {
   return `${hours}h ${mins}m`;
 }
 
+/** Full breakdown for tooltips (exact time from milliseconds). */
+export function formatDurationExact(ms: number): string {
+  if (ms <= 0) return '0s';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const parts: string[] = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0 || h > 0) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(' ');
+}
+
+/** Minutes with fractional part for hover (exact from ms). */
+export function formatMinutesExact(ms: number): string {
+  if (ms <= 0) return '0 min';
+  const min = ms / 60000;
+  if (min >= 10) return `${min.toFixed(1)} min`;
+  return `${min.toFixed(2)} min`;
+}
+
 export function formatHours(ms: number): string {
   return `${Math.round(ms / 3600000)}h`;
 }

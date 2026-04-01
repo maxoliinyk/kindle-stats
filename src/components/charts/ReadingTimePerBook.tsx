@@ -1,5 +1,5 @@
 import { Bar } from 'react-chartjs-2';
-import { formatDuration, msToHours } from '../../data';
+import { formatDuration, formatDurationExact, msToHours } from '../../data';
 import type { BookStats } from '../../types';
 import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
 
@@ -37,6 +37,9 @@ export function ReadingTimePerBook({ books }: Props) {
       legend: { display: false },
       tooltip: {
         ...getSharedTooltip(textColor, fontFamily),
+        enabled: true,
+        mode: 'nearest' as const,
+        intersect: false,
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -46,9 +49,9 @@ export function ReadingTimePerBook({ books }: Props) {
             const book = top[ctx.dataIndex];
             const avgSession = book.sessionCount > 0 ? book.totalReadingMs / book.sessionCount : 0;
             return [
-              `Total: ${formatDuration(book.totalReadingMs)}`,
+              `Total: ${formatDurationExact(book.totalReadingMs)}`,
               `Sessions: ${book.sessionCount}`,
-              `Avg session: ${formatDuration(avgSession)}`,
+              `Avg session: ${formatDurationExact(avgSession)}`,
             ];
           },
           footer: (items: any[]) => {
@@ -75,6 +78,7 @@ export function ReadingTimePerBook({ books }: Props) {
       },
     },
   };
+
 
   return (
     <>

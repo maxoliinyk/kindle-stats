@@ -29,6 +29,7 @@ export function getSharedTooltip(
   fontFamily: string,
 ): Partial<TooltipOptions<'bar' | 'line' | 'doughnut'>> {
   return {
+    position: 'nearest',
     backgroundColor: 'rgba(28, 28, 30, 0.94)',
     titleColor: '#f5f5f7',
     bodyColor: '#f5f5f7',

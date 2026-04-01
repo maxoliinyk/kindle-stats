@@ -114,7 +114,7 @@ export function Dashboard({ stats, onReload }: DashboardProps) {
         </div>
 
         {/* Reading Goals */}
-        <div className="chart-card">
+        <div className="chart-card chart-card-goals">
           <h3>🎯 Reading Goals</h3>
           <ReadingGoals
             goals={stats.goals}
@@ -123,8 +123,8 @@ export function Dashboard({ stats, onReload }: DashboardProps) {
           />
         </div>
 
-        {/* Longest Sessions */}
-        <div className="chart-card">
+        {/* Longest Sessions — overflow visible so hover panels are not clipped */}
+        <div className="chart-card chart-card-sessions">
           <h3>⏱️ Longest Sessions</h3>
           <LongestSessions sessions={stats.topSessions} />
         </div>

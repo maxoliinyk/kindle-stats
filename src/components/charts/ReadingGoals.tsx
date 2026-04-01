@@ -72,7 +72,7 @@ export function ReadingGoals({ goals, completedTitles, totalBooks }: Props) {
             <div className="goal-label">{goal.year} Goal</div>
             <div className="goal-detail">{progress}/{goal.goalValue} books</div>
             {activeGoalId === goal.goalId && (
-              <div className="chart-hover-detail">
+              <div className="goal-hover-detail" role="tooltip">
                 <span>{Math.round(pct * 100)}% complete</span>
                 <span>{Math.max(goal.goalValue - progress, 0)} books remaining</span>
                 <span>Total books in library: {totalBooks}</span>
