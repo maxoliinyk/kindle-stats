@@ -43,9 +43,10 @@ ChartJS.defaults.animation = { duration: 600, easing: 'easeOutQuart' };
 interface DashboardProps {
   stats: ProcessedStats;
   onReload: () => void;
+  onBookSelect: (bookId: string) => void;
 }
 
-export function Dashboard({ stats, onReload }: DashboardProps) {
+export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
   return (
     <div className="dashboard">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -80,7 +81,7 @@ export function Dashboard({ stats, onReload }: DashboardProps) {
         {/* Reading Time per Book */}
         <div className="chart-card full-width">
           <h3>📖 Reading Time per Book</h3>
-          <ReadingTimePerBook books={stats.bookStats} />
+          <ReadingTimePerBook books={stats.bookStats} onBookSelect={onBookSelect} />
         </div>
 
         {/* Time of Day */}

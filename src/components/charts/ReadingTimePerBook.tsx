@@ -5,9 +5,10 @@ import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './ch
 
 interface Props {
   books: BookStats[];
+  onBookSelect: (bookId: string) => void;
 }
 
-export function ReadingTimePerBook({ books }: Props) {
+export function ReadingTimePerBook({ books, onBookSelect }: Props) {
   const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
   const top = books.slice(0, 15);
   const totalMs = top.reduce((acc, book) => acc + book.totalReadingMs, 0);
@@ -45,6 +46,13 @@ export function ReadingTimePerBook({ books }: Props) {
         chart.$hoverClientY = nativeEvent.clientY;
       }
       chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
+    onClick: (_event: unknown, elements: any[]) => {
+      const first = elements[0];
+      if (!first) return;
+      const book = top[first.index];
+      if (!book) return;
+      onBookSelect(book.id);
     },
     plugins: {
       legend: { display: false },

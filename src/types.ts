@@ -79,6 +79,41 @@ export interface TopSession {
   durationMs: number;
 }
 
+export interface BookSessionDetail {
+  id: string;
+  asin: string;
+  personalDocumentId: string;
+  startTime: Date | null;
+  endTime: Date;
+  durationMs: number;
+  readingMarketplace: string;
+  deviceFamily: string;
+  contentType: string;
+  pageFlips: number;
+}
+
+export interface BookDetailStats {
+  id: string;
+  name: string;
+  asin: string;
+  personalDocumentId: string;
+  totalReadingMs: number;
+  sessionCount: number;
+  validSessionCount: number;
+  avgSessionMs: number;
+  avgValidSessionMs: number;
+  medianSessionMs: number;
+  medianValidSessionMs: number;
+  uniqueDays: number;
+  firstRead: Date;
+  lastRead: Date;
+  totalPageFlips: number;
+  avgPageFlipsPerSession: number;
+  deviceFamilies: string[];
+  contentTypes: string[];
+  sessions: BookSessionDetail[];
+}
+
 export interface ParsedData {
   readingSessions: ReadingSession[];
   deviceSessions: DeviceSession[];
@@ -90,6 +125,7 @@ export interface ParsedData {
 
 export interface ProcessedStats {
   bookStats: BookStats[];
+  bookDetails: Record<string, BookDetailStats>;
   dailyReadings: DailyReading[];
   hourlyReadings: HourlyReading[];
   monthlyReadings: MonthlyReading[];

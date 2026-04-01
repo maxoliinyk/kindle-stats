@@ -1,6 +1,6 @@
 import type {
   ParsedData, ProcessedStats, BookStats, DailyReading,
-  HourlyReading, MonthlyReading, StreakInfo, TopSession,
+  HourlyReading, MonthlyReading, StreakInfo, TopSession, BookDetailStats, BookSessionDetail,
 } from './types';
 
 function dateKey(d: Date): string {
@@ -175,8 +175,117 @@ function computeDeviceBreakdown(data: ParsedData): { device: string; totalMs: nu
     .sort((a, b) => b.totalMs - a.totalMs);
 }
 
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  }
+  return sorted[middle];
+}
+
+function computeBookDetails(data: ParsedData): Record<string, BookDetailStats> {
+  const deviceByAsin = new Map<string, typeof data.deviceSessions>();
+  const allDurationsByBook = new Map<string, number[]>();
+  const uniqueDaysByBook = new Map<string, Set<string>>();
+  for (const session of data.deviceSessions) {
+    if (!session.asin) continue;
+    const current = deviceByAsin.get(session.asin) ?? [];
+    current.push(session);
+    deviceByAsin.set(session.asin, current);
+  }
+
+  const details = new Map<string, BookDetailStats>();
+
+  for (const session of data.readingSessions) {
+    const key = session.personalDocumentId || session.asin || session.productName;
+    const sessionDate = session.startTime || session.endTime;
+    const deviceSessions = session.asin ? (deviceByAsin.get(session.asin) ?? []) : [];
+    const matchedDevice = deviceSessions[0];
+    const pageFlips = matchedDevice?.numberOfPageFlips ?? 0;
+    const deviceFamily = matchedDevice?.deviceFamily || 'Unknown';
+    const contentType = matchedDevice?.contentType || 'Unknown';
+
+    if (!details.has(key)) {
+      details.set(key, {
+        id: key,
+        name: session.productName || 'Unknown',
+        asin: session.asin || '',
+        personalDocumentId: session.personalDocumentId || '',
+        totalReadingMs: 0,
+        sessionCount: 0,
+        validSessionCount: 0,
+        avgSessionMs: 0,
+        avgValidSessionMs: 0,
+        medianSessionMs: 0,
+        medianValidSessionMs: 0,
+        uniqueDays: 0,
+        firstRead: new Date(sessionDate),
+        lastRead: new Date(sessionDate),
+        totalPageFlips: 0,
+        avgPageFlipsPerSession: 0,
+        deviceFamilies: [],
+        contentTypes: [],
+        sessions: [],
+      });
+    }
+
+    const detail = details.get(key)!;
+    const durations = allDurationsByBook.get(key) ?? [];
+    durations.push(session.totalReadingMs);
+    allDurationsByBook.set(key, durations);
+    const uniqueDays = uniqueDaysByBook.get(key) ?? new Set<string>();
+    uniqueDays.add(dateKey(sessionDate));
+    uniqueDaysByBook.set(key, uniqueDays);
+
+    detail.totalReadingMs += session.totalReadingMs;
+    detail.sessionCount += 1;
+    detail.totalPageFlips += pageFlips;
+    if (sessionDate < detail.firstRead) detail.firstRead = new Date(sessionDate);
+    if (sessionDate > detail.lastRead) detail.lastRead = new Date(sessionDate);
+    if (deviceFamily && !detail.deviceFamilies.includes(deviceFamily)) detail.deviceFamilies.push(deviceFamily);
+    if (contentType && !detail.contentTypes.includes(contentType)) detail.contentTypes.push(contentType);
+
+    if (session.totalReadingMs > 60000) {
+      detail.validSessionCount += 1;
+      const sessionId = `${key}-${session.endTime.toISOString()}-${detail.validSessionCount}`;
+      const sessionDetail: BookSessionDetail = {
+        id: sessionId,
+        asin: session.asin || '',
+        personalDocumentId: session.personalDocumentId || '',
+        startTime: session.startTime,
+        endTime: session.endTime,
+        durationMs: session.totalReadingMs,
+        readingMarketplace: session.readingMarketplace || '',
+        deviceFamily,
+        contentType,
+        pageFlips,
+      };
+      detail.sessions.push(sessionDetail);
+    }
+  }
+
+  for (const detail of details.values()) {
+    detail.sessions.sort((a, b) => b.endTime.getTime() - a.endTime.getTime());
+    const allDurations = allDurationsByBook.get(detail.id) ?? [];
+    const validDurations = detail.sessions.map(s => s.durationMs);
+    detail.avgSessionMs = detail.sessionCount > 0 ? detail.totalReadingMs / detail.sessionCount : 0;
+    detail.avgValidSessionMs = detail.validSessionCount > 0
+      ? validDurations.reduce((acc, value) => acc + value, 0) / detail.validSessionCount
+      : 0;
+    detail.medianSessionMs = median(allDurations);
+    detail.medianValidSessionMs = median(validDurations);
+    detail.uniqueDays = (uniqueDaysByBook.get(detail.id) ?? new Set()).size;
+    detail.avgPageFlipsPerSession = detail.validSessionCount > 0 ? detail.totalPageFlips / detail.validSessionCount : 0;
+  }
+
+  return Object.fromEntries(details.entries());
+}
+
 export function processData(data: ParsedData): ProcessedStats {
   const bookStats = computeBookStats(data);
+  const bookDetails = computeBookDetails(data);
   const dailyReadings = computeDailyReadings(data);
   const hourlyReadings = computeHourlyReadings(data);
   const monthlyReadings = computeMonthlyReadings(data);
@@ -194,6 +303,7 @@ export function processData(data: ParsedData): ProcessedStats {
 
   return {
     bookStats,
+    bookDetails,
     dailyReadings,
     hourlyReadings,
     monthlyReadings,

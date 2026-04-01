@@ -6,6 +6,7 @@ import { loadStats, saveStats, clearStats } from './storage';
 import { ThemeToggle } from './components/ThemeToggle';
 import { DropZone } from './components/DropZone';
 import { Dashboard } from './components/Dashboard';
+import { BookDetailsPage } from './components/BookDetailsPage';
 import type { ProcessedStats } from './types';
 
 type AppState = 'idle' | 'loading' | 'ready' | 'error';
@@ -15,6 +16,20 @@ export default function App() {
   const [state, setState] = useState<AppState>('idle');
   const [stats, setStats] = useState<ProcessedStats | null>(null);
   const [error, setError] = useState<string>('');
+  const [path, setPath] = useState<string>(window.location.pathname);
+
+  const navigate = useCallback((nextPath: string) => {
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
+    }
+    setPath(nextPath);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   useEffect(() => {
     const saved = loadStats();
@@ -52,7 +67,19 @@ export default function App() {
     setStats(null);
     setError('');
     clearStats();
-  }, []);
+    navigate('/');
+  }, [navigate]);
+
+  const selectedBookId = path.startsWith('/book/') ? decodeURIComponent(path.replace('/book/', '')) : '';
+  const selectedBook = stats?.bookDetails?.[selectedBookId] ?? null;
+
+  const handleBookSelect = useCallback((bookId: string) => {
+    navigate(`/book/${encodeURIComponent(bookId)}`);
+  }, [navigate]);
+
+  const handleBackToDashboard = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
   return (
     <>
@@ -89,7 +116,9 @@ export default function App() {
         )}
 
         {state === 'ready' && stats && (
-          <Dashboard stats={stats} onReload={handleReload} />
+          selectedBook
+            ? <BookDetailsPage book={selectedBook} onBack={handleBackToDashboard} />
+            : <Dashboard stats={stats} onReload={handleReload} onBookSelect={handleBookSelect} />
         )}
       </main>
     </>

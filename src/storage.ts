@@ -4,7 +4,7 @@ export const THEME_STORAGE_KEY = 'kindle-stats-theme';
 export const STATS_STORAGE_KEY = 'kindle-stats-stats-v1';
 
 interface PersistedStatsPayload {
-  version: 1;
+  version: 2;
   savedAt: string;
   stats: ProcessedStats;
 }
@@ -14,8 +14,25 @@ function isObjectLike(value: unknown): value is Record<string, unknown> {
 }
 
 function reviveProcessedStatsDates(stats: ProcessedStats): ProcessedStats {
+  const revivedBookDetails = Object.fromEntries(
+    Object.entries(stats.bookDetails || {}).map(([bookId, detail]) => [
+      bookId,
+      {
+        ...detail,
+        firstRead: new Date(detail.firstRead),
+        lastRead: new Date(detail.lastRead),
+        sessions: detail.sessions.map(session => ({
+          ...session,
+          startTime: session.startTime ? new Date(session.startTime) : null,
+          endTime: new Date(session.endTime),
+        })),
+      },
+    ]),
+  );
+
   return {
     ...stats,
+    bookDetails: revivedBookDetails,
     bookStats: stats.bookStats.map(book => ({
       ...book,
       firstRead: new Date(book.firstRead),
@@ -30,7 +47,7 @@ function reviveProcessedStatsDates(stats: ProcessedStats): ProcessedStats {
 
 function isValidPersistedPayload(value: unknown): value is PersistedStatsPayload {
   if (!isObjectLike(value)) return false;
-  if (value.version !== 1) return false;
+  if (value.version !== 2) return false;
   if (typeof value.savedAt !== 'string') return false;
   if (!isObjectLike(value.stats)) return false;
   return true;
@@ -38,7 +55,7 @@ function isValidPersistedPayload(value: unknown): value is PersistedStatsPayload
 
 export function saveStats(stats: ProcessedStats): void {
   const payload: PersistedStatsPayload = {
-    version: 1,
+    version: 2,
     savedAt: new Date().toISOString(),
     stats,
   };
