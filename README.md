@@ -3,6 +3,13 @@
 Kindle Stats is a tiny web app that turns your Kindle export into an easy reading dashboard.
 Upload your data, and it gives you clean charts for reading time, streaks, daily activity, and device usage.
 
+## Get your Kindle data
+
+Before using this app, request your Amazon data export and include Kindle data:
+
+1. Open Amazon Privacy Central: https://www.amazon.com/hz/privacy-central/data-requests/preview.html
+2. Submit a data request and select the Kindle-related category (or request all data): https://www.amazon.com/gp/help/customer/display.html?nodeId=GXPU3YPMBZQRWZK2
+
 ## Run it locally
 
 1. Clone the repo:
