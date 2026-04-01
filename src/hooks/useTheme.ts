@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ThemeMode } from '../types';
+import { getStoredThemeMode } from '../theme';
+import { THEME_STORAGE_KEY } from '../storage';
 
 function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -10,10 +12,7 @@ function getResolvedTheme(mode: ThemeMode): 'light' | 'dark' {
 }
 
 export function useTheme() {
-  const [mode, setMode] = useState<ThemeMode>(() => {
-    const stored = localStorage.getItem('kindle-stats-theme');
-    return (stored as ThemeMode) || 'auto';
-  });
+  const [mode, setMode] = useState<ThemeMode>(() => getStoredThemeMode());
 
   const [resolved, setResolved] = useState<'light' | 'dark'>(() => getResolvedTheme(mode));
 
@@ -24,7 +23,7 @@ export function useTheme() {
 
   useEffect(() => {
     applyTheme(getResolvedTheme(mode));
-    localStorage.setItem('kindle-stats-theme', mode);
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
 
     if (mode === 'auto') {
       const mq = window.matchMedia('(prefers-color-scheme: dark)');

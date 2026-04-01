@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { parseDroppedFolder } from './parser';
 import { processData } from './data';
+import { loadStats, saveStats, clearStats } from './storage';
 import { ThemeToggle } from './components/ThemeToggle';
 import { DropZone } from './components/DropZone';
 import { Dashboard } from './components/Dashboard';
@@ -14,6 +15,14 @@ export default function App() {
   const [state, setState] = useState<AppState>('idle');
   const [stats, setStats] = useState<ProcessedStats | null>(null);
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    const saved = loadStats();
+    if (saved) {
+      setStats(saved);
+      setState('ready');
+    }
+  }, []);
 
   const handleDrop = useCallback(async (items: DataTransferItemList) => {
     setState('loading');
@@ -29,6 +38,7 @@ export default function App() {
 
       const processed = processData(parsed);
       setStats(processed);
+      saveStats(processed);
       setState('ready');
     } catch (err) {
       console.error('Parse error:', err);
@@ -41,6 +51,7 @@ export default function App() {
     setState('idle');
     setStats(null);
     setError('');
+    clearStats();
   }, []);
 
   return (
