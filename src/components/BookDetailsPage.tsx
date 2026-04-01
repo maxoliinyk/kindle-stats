@@ -26,7 +26,7 @@ export function BookDetailsPage({ book, onBack }: BookDetailsPageProps) {
         </button>
         <h2 className="book-details-title">{book.name}</h2>
         <p className="book-details-subtitle">
-          {book.validSessionCount} sessions over 1 minute · {book.uniqueDays} unique reading days
+          {book.validSessionCount} sessions · {book.uniqueDays} unique reading days
         </p>
       </div>
 

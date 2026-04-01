@@ -11,22 +11,48 @@ import type { ProcessedStats } from './types';
 
 type AppState = 'idle' | 'loading' | 'ready' | 'error';
 
+const BASE_PATH = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+
+function toAppPath(pathname: string): string {
+  if (!BASE_PATH) return pathname || '/';
+  if (pathname === BASE_PATH) return '/';
+  if (pathname.startsWith(`${BASE_PATH}/`)) {
+    return pathname.slice(BASE_PATH.length) || '/';
+  }
+  return pathname || '/';
+}
+
+function toBrowserPath(appPath: string): string {
+  const normalizedAppPath = appPath.startsWith('/') ? appPath : `/${appPath}`;
+  if (!BASE_PATH) return normalizedAppPath;
+  return `${BASE_PATH}${normalizedAppPath === '/' ? '/' : normalizedAppPath}`;
+}
+
+function safeDecodePathPart(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export default function App() {
   const { mode, setMode } = useTheme();
   const [state, setState] = useState<AppState>('idle');
   const [stats, setStats] = useState<ProcessedStats | null>(null);
   const [error, setError] = useState<string>('');
-  const [path, setPath] = useState<string>(window.location.pathname);
+  const [path, setPath] = useState<string>(toAppPath(window.location.pathname));
 
   const navigate = useCallback((nextPath: string) => {
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState({}, '', nextPath);
+    const browserPath = toBrowserPath(nextPath);
+    if (window.location.pathname !== browserPath) {
+      window.history.pushState({}, '', browserPath);
     }
     setPath(nextPath);
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setPath(window.location.pathname);
+    const onPopState = () => setPath(toAppPath(window.location.pathname));
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -70,7 +96,9 @@ export default function App() {
     navigate('/');
   }, [navigate]);
 
-  const selectedBookId = path.startsWith('/book/') ? decodeURIComponent(path.replace('/book/', '')) : '';
+  const selectedBookId = path.startsWith('/book/')
+    ? safeDecodePathPart(path.replace('/book/', '').replace(/\/+$/, ''))
+    : '';
   const selectedBook = stats?.bookDetails?.[selectedBookId] ?? null;
 
   const handleBookSelect = useCallback((bookId: string) => {
@@ -116,8 +144,22 @@ export default function App() {
         )}
 
         {state === 'ready' && stats && (
-          selectedBook
-            ? <BookDetailsPage book={selectedBook} onBack={handleBackToDashboard} />
+          path.startsWith('/book/')
+            ? (
+              selectedBook
+                ? <BookDetailsPage book={selectedBook} onBack={handleBackToDashboard} />
+                : (
+                  <div className="dashboard">
+                    <div className="chart-card full-width">
+                      <h3>Book Not Found</h3>
+                      <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+                        This book page could not be resolved from current data.
+                      </p>
+                      <button className="reload-btn" onClick={handleBackToDashboard}>← Back to Dashboard</button>
+                    </div>
+                  </div>
+                )
+            )
             : <Dashboard stats={stats} onReload={handleReload} onBookSelect={handleBookSelect} />
         )}
       </main>

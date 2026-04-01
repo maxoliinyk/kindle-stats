@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { formatDuration, formatDurationExactHM, msToHours } from '../../data';
 import type { BookStats } from '../../types';
@@ -13,6 +14,18 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
   const top = books.slice(0, 15);
   const totalMs = top.reduce((acc, book) => acc + book.totalReadingMs, 0);
   const topBook = top[0];
+
+  const hideCustomTooltip = () => {
+    const tooltipEl = document.getElementById('chartjs-tooltip-custom');
+    if (!tooltipEl) return;
+    tooltipEl.style.opacity = '0';
+    tooltipEl.style.visibility = 'hidden';
+    tooltipEl.remove();
+  };
+
+  useEffect(() => () => {
+    hideCustomTooltip();
+  }, []);
 
   const data = {
     labels: top.map(b => {
@@ -52,6 +65,7 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
       if (!first) return;
       const book = top[first.index];
       if (!book) return;
+      hideCustomTooltip();
       onBookSelect(book.id);
     },
     plugins: {
@@ -146,11 +160,13 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
     },
   };
 
+  const chartRenderKey = top.map(book => `${book.id}:${book.totalReadingMs}`).join('|');
+
 
   return (
     <>
       <div className="chart-container" style={{ height: `${Math.max(300, top.length * 36)}px` }}>
-        <Bar data={data} options={options} />
+        <Bar key={chartRenderKey} data={data} options={options} redraw />
       </div>
       {topBook && (
         <p className="chart-insight">
