@@ -69,31 +69,31 @@ export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
       <div className="chart-grid">
         {/* Calendar Heatmap — Full Width */}
         <div className="chart-card full-width">
-          <h3>📅 Reading Calendar</h3>
+          <h3>Reading Calendar</h3>
           <CalendarHeatmap daily={stats.dailyReadings} />
         </div>
 
         {/* Reading Streaks — Full Width */}
         <div className="chart-card full-width">
-          <h3>🔥 Reading Streaks</h3>
+          <h3>Reading Streaks</h3>
           <ReadingStreaks streaks={stats.streakInfo} />
         </div>
 
         {/* Reading Time per Book */}
         <div className="chart-card full-width">
-          <h3>📖 Reading Time per Book</h3>
+          <h3>Reading Time per Book</h3>
           <ReadingTimePerBook books={stats.bookStats} onBookSelect={onBookSelect} />
         </div>
 
         {/* Time of Day */}
         <div className="chart-card">
-          <h3>🕐 Time of Day</h3>
+          <h3>Time of Day</h3>
           <TimeOfDay hourly={stats.hourlyReadings} />
         </div>
 
         {/* Device Breakdown */}
         <div className="chart-card">
-          <h3>📱 Devices</h3>
+          <h3>Devices</h3>
           {stats.deviceBreakdown.length > 0 ? (
             <DeviceBreakdown breakdown={stats.deviceBreakdown} details={stats.deviceDetails} />
           ) : (
@@ -105,19 +105,19 @@ export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
 
         {/* Reading Pace */}
         <div className="chart-card">
-          <h3>📈 Reading Pace</h3>
+          <h3>Reading Pace</h3>
           <ReadingPace daily={stats.dailyReadings} />
         </div>
 
         {/* Books per Month */}
         <div className="chart-card">
-          <h3>📊 Monthly Activity</h3>
+          <h3>Monthly Activity</h3>
           <BooksPerMonth monthly={stats.monthlyReadings} />
         </div>
 
         {/* Reading Goals */}
         <div className="chart-card chart-card-goals">
-          <h3>🎯 Reading Goals</h3>
+          <h3>Reading Goals</h3>
           <ReadingGoals
             goals={stats.goals}
             completedTitles={stats.completedTitles}
@@ -127,7 +127,7 @@ export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
 
         {/* Longest Sessions — overflow visible so hover panels are not clipped */}
         <div className="chart-card chart-card-sessions">
-          <h3>⏱️ Longest Sessions</h3>
+          <h3>Longest Sessions</h3>
           <LongestSessions sessions={stats.topSessions} />
         </div>
       </div>

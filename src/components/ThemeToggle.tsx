@@ -14,7 +14,7 @@ export function ThemeToggle({ mode, setMode }: ThemeToggleProps) {
         aria-label="Auto theme"
         title="Auto (System)"
       >
-        ◐
+        Auto
       </button>
       <button
         className={mode === 'light' ? 'active' : ''}
@@ -22,7 +22,7 @@ export function ThemeToggle({ mode, setMode }: ThemeToggleProps) {
         aria-label="Light theme"
         title="Light"
       >
-        ☀️
+        Light
       </button>
       <button
         className={mode === 'dark' ? 'active' : ''}
@@ -30,7 +30,7 @@ export function ThemeToggle({ mode, setMode }: ThemeToggleProps) {
         aria-label="Dark theme"
         title="Dark"
       >
-        🌙
+        Dark
       </button>
     </div>
   );

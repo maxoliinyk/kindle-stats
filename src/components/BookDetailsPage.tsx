@@ -53,39 +53,41 @@ export function BookDetailsPage({ book, onBack }: BookDetailsPageProps) {
         </div>
       </div>
 
-      <div className="chart-card full-width">
-        <h3>Book Metadata</h3>
-        <div className="book-meta-grid">
-          <div><strong>ASIN:</strong> {book.asin || '—'}</div>
-          <div><strong>Personal doc ID:</strong> {book.personalDocumentId || '—'}</div>
-          <div><strong>First read:</strong> {formatDateTime(book.firstRead)}</div>
-          <div><strong>Last read:</strong> {formatDateTime(book.lastRead)}</div>
-          <div><strong>Devices:</strong> {book.deviceFamilies.length > 0 ? book.deviceFamilies.join(', ') : 'Unknown'}</div>
-          <div><strong>Content types:</strong> {book.contentTypes.length > 0 ? book.contentTypes.join(', ') : 'Unknown'}</div>
-          <div><strong>Avg raw session:</strong> {formatMinutesExact(book.avgSessionMs)}</div>
-          <div><strong>Median raw session:</strong> {formatMinutesExact(book.medianSessionMs)}</div>
+      <div className="book-details-sections">
+        <div className="chart-card full-width">
+          <h3>Book Metadata</h3>
+          <div className="book-meta-grid">
+            <div><strong>ASIN:</strong> {book.asin || '—'}</div>
+            <div><strong>Personal doc ID:</strong> {book.personalDocumentId || '—'}</div>
+            <div><strong>First read:</strong> {formatDateTime(book.firstRead)}</div>
+            <div><strong>Last read:</strong> {formatDateTime(book.lastRead)}</div>
+            <div><strong>Devices:</strong> {book.deviceFamilies.length > 0 ? book.deviceFamilies.join(', ') : 'Unknown'}</div>
+            <div><strong>Content types:</strong> {book.contentTypes.length > 0 ? book.contentTypes.join(', ') : 'Unknown'}</div>
+            <div><strong>Avg raw session:</strong> {formatMinutesExact(book.avgSessionMs)}</div>
+            <div><strong>Median raw session:</strong> {formatMinutesExact(book.medianSessionMs)}</div>
+          </div>
         </div>
-      </div>
 
-      <div className="chart-card full-width">
-        <h3>All Sessions ({book.validSessionCount})</h3>
-        <div className="book-session-list">
-          {book.sessions.map((session) => (
-            <div key={session.id} className="book-session-item">
-              <div className="book-session-main">
-                <div className="book-session-date">{formatDateTime(session.endTime)}</div>
-                <div className="book-session-range">
-                  Start: {formatDateTime(session.startTime)} · End: {formatDateTime(session.endTime)}
+        <div className="chart-card full-width">
+          <h3>All Sessions ({book.validSessionCount})</h3>
+          <div className="book-session-list">
+            {book.sessions.map((session) => (
+              <div key={session.id} className="book-session-item">
+                <div className="book-session-main">
+                  <div className="book-session-date">{formatDateTime(session.endTime)}</div>
+                  <div className="book-session-range">
+                    Start: {formatDateTime(session.startTime)} · End: {formatDateTime(session.endTime)}
+                  </div>
+                </div>
+                <div className="book-session-right">
+                  <div className="book-session-duration">{formatDurationExact(session.durationMs)}</div>
+                  <div className="book-session-meta">
+                    {session.readingMarketplace || 'Unknown marketplace'} · {session.deviceFamily || 'Unknown device'} · {session.contentType || 'Unknown type'} · {session.pageFlips} flips
+                  </div>
                 </div>
               </div>
-              <div className="book-session-right">
-                <div className="book-session-duration">{formatDurationExact(session.durationMs)}</div>
-                <div className="book-session-meta">
-                  {session.readingMarketplace || 'Unknown marketplace'} · {session.deviceFamily || 'Unknown device'} · {session.contentType || 'Unknown type'} · {session.pageFlips} flips
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
