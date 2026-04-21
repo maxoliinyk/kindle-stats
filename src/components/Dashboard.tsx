@@ -38,7 +38,8 @@ ChartJS.register(
 
 // Global Chart.js defaults
 ChartJS.defaults.font.family = "'Inter', sans-serif";
-ChartJS.defaults.animation = { duration: 600, easing: 'easeOutQuart' };
+ChartJS.defaults.animation.duration = 600;
+ChartJS.defaults.animation.easing = 'easeOutQuart';
 
 interface DashboardProps {
   stats: ProcessedStats;
@@ -94,7 +95,7 @@ export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
         <div className="chart-card">
           <h3>📱 Devices</h3>
           {stats.deviceBreakdown.length > 0 ? (
-            <DeviceBreakdown breakdown={stats.deviceBreakdown} />
+            <DeviceBreakdown breakdown={stats.deviceBreakdown} details={stats.deviceDetails} />
           ) : (
             <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: 40 }}>
               No device data available.

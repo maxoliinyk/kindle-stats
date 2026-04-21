@@ -36,7 +36,6 @@ export function ReadingStreaks({ streaks }: Props) {
           key={card.id}
           className="streak-card"
           tabIndex={0}
-          title={card.detail}
           onMouseEnter={() => setActive(card.id)}
           onMouseLeave={() => setActive(null)}
           onFocus={() => setActive(card.id)}

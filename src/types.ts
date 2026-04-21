@@ -79,6 +79,23 @@ export interface TopSession {
   durationMs: number;
 }
 
+export interface DeviceSessionSummary {
+  id: string;
+  asin: string;
+  endTimestamp: Date;
+  durationMs: number;
+  contentType: string;
+  pageFlips: number;
+}
+
+export interface DeviceDetailStats {
+  device: string;
+  totalMs: number;
+  sessionCount: number;
+  avgSessionMs: number;
+  sessions: DeviceSessionSummary[];
+}
+
 export interface BookSessionDetail {
   id: string;
   asin: string;
@@ -132,6 +149,7 @@ export interface ProcessedStats {
   streakInfo: StreakInfo;
   topSessions: TopSession[];
   deviceBreakdown: { device: string; totalMs: number }[];
+  deviceDetails: DeviceDetailStats[];
   goals: ReadingGoal[];
   completedTitles: CompletedTitle[];
   totalReadingMs: number;

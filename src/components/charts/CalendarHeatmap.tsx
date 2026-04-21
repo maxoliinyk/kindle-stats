@@ -75,12 +75,19 @@ export function CalendarHeatmap({ daily }: Props) {
     return Math.round((count / percentiles.length) * 100);
   }
 
-  const selectedDate = pinnedDate ?? activeDate ?? cells[cells.length - 1]?.date ?? null;
-  const selectedCell = selectedDate ? cells.find(cell => cell.date === selectedDate) : null;
-  const selectedLevel = selectedCell ? getLevel(selectedCell.ms) : 0;
-  const selectedPercentile = selectedCell ? getPercentile(selectedCell.ms) : 0;
+  function getIntensityLabel(ms: number): string {
+    if (ms <= 0) return 'No reading';
+    const minutes = Math.round(ms / 60000);
+    if (minutes <= 15) return 'Light';
+    if (minutes <= 45) return 'Medium';
+    if (minutes <= 120) return 'Heavy';
+    return 'Very heavy';
+  }
 
-  const hoverCell = activeDate ? cells.find(c => c.date === activeDate) : null;
+  const selectedDate = pinnedDate ?? activeDate ?? null;
+  const pinnedCell = pinnedDate ? cells.find(cell => cell.date === pinnedDate) : null;
+  const pinnedPercentile = pinnedCell ? getPercentile(pinnedCell.ms) : 0;
+  const hoverCell = activeDate ? cells.find(cell => cell.date === activeDate) : null;
   const hoverPercentile = hoverCell ? getPercentile(hoverCell.ms) : 0;
   const showFloatTip = !pinnedDate && hoverCell && pointer;
 
@@ -110,19 +117,21 @@ export function CalendarHeatmap({ daily }: Props) {
         </div>
       )}
 
-      {pinnedDate && selectedCell && (
+      {pinnedCell && (
         <div className="heatmap-pinned-bar" aria-live="polite">
           <span className="heatmap-details-title">
-            {new Date(selectedCell.date).toLocaleDateString('en-US', {
+            {new Date(pinnedCell.date).toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
             })}
           </span>
-          <span>{selectedCell.ms > 0 ? formatDurationExact(selectedCell.ms) : 'No reading'}</span>
-          <span>Level {selectedLevel}/4</span>
-          <span>{selectedPercentile > 0 ? `Top ${100 - selectedPercentile + 1}% day` : 'Not ranked'}</span>
-          <span className="heatmap-pin">Pinned — click cell again to clear</span>
+          <span>{pinnedCell.ms > 0 ? formatDurationExact(pinnedCell.ms) : 'No reading'}</span>
+          <span>Intensity: {getIntensityLabel(pinnedCell.ms)}</span>
+          <span>{pinnedPercentile > 0 ? `Top ${100 - pinnedPercentile + 1}% day` : 'Not ranked'}</span>
+          <span className="heatmap-pin">
+            Pinned — click same day again to clear
+          </span>
         </div>
       )}
 
@@ -137,19 +146,25 @@ export function CalendarHeatmap({ daily }: Props) {
               key={i}
               className="heatmap-cell"
               data-level={getLevel(cell.ms)}
+              data-date={cell.date}
               data-active={selectedDate === cell.date ? 'true' : 'false'}
               tabIndex={0}
               role="button"
-              aria-label={`${cell.date}, ${cell.ms > 0 ? formatDuration(cell.ms) : 'No reading'}`}
-              onMouseEnter={e => {
+              aria-label={`${cell.date}, ${cell.ms > 0 ? formatDuration(cell.ms) : 'No reading'}, intensity ${getIntensityLabel(cell.ms)}`}
+              onMouseEnter={() => {
                 if (!pinnedDate) {
                   setActiveDate(cell.date);
-                  setPointer({ x: e.clientX, y: e.clientY });
                 }
               }}
-              onFocus={() => !pinnedDate && setActiveDate(cell.date)}
+              onFocus={() => {
+                if (!pinnedDate) {
+                  setActiveDate(cell.date);
+                }
+              }}
               onBlur={() => !pinnedDate && setActiveDate(null)}
-              onClick={() => setPinnedDate(prev => (prev === cell.date ? null : cell.date))}
+              onClick={() => {
+                setPinnedDate(prev => (prev === cell.date ? null : cell.date));
+              }}
             />
           ))}
         </div>
@@ -173,7 +188,7 @@ export function CalendarHeatmap({ daily }: Props) {
             })}
           </span>
           <span>{hoverCell.ms > 0 ? formatDurationExact(hoverCell.ms) : 'No reading'}</span>
-          <span>Level {getLevel(hoverCell.ms)}/4</span>
+          <span>Intensity: {getIntensityLabel(hoverCell.ms)}</span>
           <span>
             {hoverPercentile > 0 ? `Top ${100 - hoverPercentile + 1}% day` : 'Not ranked'}
           </span>

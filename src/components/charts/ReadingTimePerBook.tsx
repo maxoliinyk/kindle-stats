@@ -1,8 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import type { Chart as ChartJS } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { formatDuration, formatDurationExactHM, msToHours } from '../../data';
 import type { BookStats } from '../../types';
-import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
+import {
+  getSharedChartInteraction,
+  getSharedTooltip,
+  removeChartTooltipForChart,
+  setChartPointerCursor,
+  useChartTheme,
+} from './chartTheme';
 
 interface Props {
   books: BookStats[];
@@ -11,20 +18,15 @@ interface Props {
 
 export function ReadingTimePerBook({ books, onBookSelect }: Props) {
   const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
+  const chartRef = useRef<ChartJS<'bar'> | null>(null);
   const top = books.slice(0, 15);
   const totalMs = top.reduce((acc, book) => acc + book.totalReadingMs, 0);
   const topBook = top[0];
 
-  const hideCustomTooltip = () => {
-    const tooltipEl = document.getElementById('chartjs-tooltip-custom');
-    if (!tooltipEl) return;
-    tooltipEl.style.opacity = '0';
-    tooltipEl.style.visibility = 'hidden';
-    tooltipEl.remove();
-  };
-
   useEffect(() => () => {
-    hideCustomTooltip();
+    if (chartRef.current) {
+      removeChartTooltipForChart(chartRef.current);
+    }
   }, []);
 
   const data = {
@@ -50,77 +52,29 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     ...getSharedChartInteraction('nearest'),
-    interaction: { mode: 'nearest' as const, intersect: true },
-    hover: { mode: 'nearest' as const, intersect: true },
-    onHover: (event: any, elements: any[], chart: any) => {
-      const nativeEvent = event?.native as MouseEvent | undefined;
-      if (nativeEvent) {
-        chart.$hoverClientX = nativeEvent.clientX;
-        chart.$hoverClientY = nativeEvent.clientY;
-      }
-      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
-    },
-    onClick: (_event: unknown, elements: any[]) => {
-      const first = elements[0];
+    interaction: { mode: 'nearest' as const, intersect: false, axis: 'y' as const },
+    hover: { mode: 'nearest' as const, intersect: false, axis: 'y' as const },
+    onHover: setChartPointerCursor,
+    onClick: (event: any, elements: any[], chart: any) => {
+      const resolvedElements = elements.length > 0
+        ? elements
+        : chart.getElementsAtEventForMode(
+          event.native ?? event,
+          'nearest',
+          { intersect: false, axis: 'y' },
+          true,
+        );
+      const first = resolvedElements[0];
       if (!first) return;
       const book = top[first.index];
       if (!book) return;
-      hideCustomTooltip();
+      removeChartTooltipForChart(chart);
       onBookSelect(book.id);
     },
     plugins: {
       legend: { display: false },
       tooltip: {
         ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
-        external: (context: any) => {
-          const { chart, tooltip } = context;
-          let tooltipEl = document.getElementById('chartjs-tooltip-custom');
-
-          if (!tooltipEl) {
-            tooltipEl = document.createElement('div');
-            tooltipEl.id = 'chartjs-tooltip-custom';
-            tooltipEl.className = 'heatmap-cursor-tooltip';
-            document.body.appendChild(tooltipEl);
-          }
-
-          if (tooltip.opacity === 0) {
-            tooltipEl.style.opacity = '0';
-            tooltipEl.style.visibility = 'hidden';
-            return;
-          }
-
-          const titleLines = tooltip.title || [];
-          const bodyLines = tooltip.body?.map((b: any) => b.lines) || [];
-          const footerLines = tooltip.footer || [];
-          let innerHtml = '';
-
-          titleLines.forEach((title: string) => {
-            innerHtml += `<span class="heatmap-cursor-tooltip-date">${title}</span>`;
-          });
-          bodyLines.forEach((body: string[]) => {
-            body.forEach(line => {
-              innerHtml += `<span>${line}</span>`;
-            });
-          });
-          if (footerLines.length > 0) {
-            innerHtml += `<div style="height: 4px;"></div>`;
-            footerLines.forEach((footer: string) => {
-              innerHtml += `<span style="color: var(--text-secondary); opacity: 0.9;">${footer}</span>`;
-            });
-          }
-
-          tooltipEl.innerHTML = innerHtml;
-          tooltipEl.style.opacity = '1';
-          tooltipEl.style.visibility = 'visible';
-          tooltipEl.style.position = 'fixed';
-          tooltipEl.style.pointerEvents = 'none';
-
-          const fallback = chart.canvas.getBoundingClientRect();
-          const x = chart.$hoverClientX ?? fallback.left + tooltip.caretX;
-          const y = chart.$hoverClientY ?? fallback.top + tooltip.caretY;
-          tooltipEl.style.left = x + 'px';
-          tooltipEl.style.top = y + 'px';
-        },
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
@@ -166,7 +120,7 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
   return (
     <>
       <div className="chart-container" style={{ height: `${Math.max(300, top.length * 36)}px` }}>
-        <Bar key={chartRenderKey} data={data} options={options} redraw />
+        <Bar ref={chartRef} key={chartRenderKey} data={data} options={options} redraw />
       </div>
       {topBook && (
         <p className="chart-insight">

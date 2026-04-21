@@ -13,9 +13,6 @@ export function useChartTheme() {
       textColor: style.getPropertyValue('--chart-text').trim() || '#8e8e93',
       gridColor: style.getPropertyValue('--chart-grid').trim() || (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
       accent: style.getPropertyValue('--accent').trim() || (isDark ? '#0A84FF' : '#007AFF'),
-      accentSecondary: style.getPropertyValue('--accent-secondary').trim() || (isDark ? '#30D158' : '#34C759'),
-      accentTertiary: style.getPropertyValue('--accent-tertiary').trim() || (isDark ? '#FF9F0A' : '#FF9500'),
-      accentQuaternary: style.getPropertyValue('--accent-quaternary').trim() || (isDark ? '#BF5AF2' : '#AF52DE'),
       fontFamily: "'Inter', sans-serif",
       tooltipBg: isDark ? 'rgba(28, 28, 30, 0.94)' : 'rgba(255, 255, 255, 0.98)',
       tooltipText: isDark ? '#f5f5f7' : '#1d1d1f',
@@ -31,14 +28,29 @@ export function getSharedChartInteraction(mode: 'index' | 'nearest' = 'nearest')
   };
 }
 
+function getTooltipElementId(chart: { id: string | number }): string {
+  return `chartjs-tooltip-custom-${String(chart.id)}`;
+}
+
+export function removeChartTooltipForChart(chart: { id: string | number }): void {
+  const tooltipEl = document.getElementById(getTooltipElementId(chart));
+  if (!tooltipEl) return;
+  tooltipEl.remove();
+}
+
+export function setChartPointerCursor(_event: unknown, elements: unknown[], chart: { canvas: { style: { cursor: string } } }) {
+  chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+}
+
 export const externalTooltipHandler = (context: any) => {
   const { chart, tooltip } = context;
-  let tooltipEl = document.getElementById('chartjs-tooltip-custom');
+  const tooltipElementId = getTooltipElementId(chart);
+  let tooltipEl = document.getElementById(tooltipElementId);
 
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
-    tooltipEl.id = 'chartjs-tooltip-custom';
-    tooltipEl.className = 'heatmap-cursor-tooltip';
+    tooltipEl.id = tooltipElementId;
+    tooltipEl.className = 'heatmap-cursor-tooltip chart-cursor-tooltip';
     document.body.appendChild(tooltipEl);
   }
 

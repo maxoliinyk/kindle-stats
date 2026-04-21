@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { parseDroppedFolder } from './parser';
 import { processData } from './data';
@@ -36,6 +36,16 @@ function safeDecodePathPart(value: string): string {
   }
 }
 
+function extractBookIdFromPath(path: string): string {
+  if (!path.startsWith('/book/')) return '';
+  const raw = path.slice('/book/'.length).replace(/\/+$/, '');
+  return safeDecodePathPart(raw);
+}
+
+function normalizeBookKey(value: string): string {
+  return safeDecodePathPart(value).trim();
+}
+
 export default function App() {
   const { mode, setMode } = useTheme();
   const [state, setState] = useState<AppState>('idle');
@@ -52,10 +62,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setPath(toAppPath(window.location.pathname));
+    const onPopState = () => {
+      const appPath = toAppPath(window.location.pathname);
+      setPath(appPath);
+    };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [path]);
 
   useEffect(() => {
     const saved = loadStats();
@@ -96,14 +113,32 @@ export default function App() {
     navigate('/');
   }, [navigate]);
 
-  const selectedBookId = path.startsWith('/book/')
-    ? safeDecodePathPart(path.replace('/book/', '').replace(/\/+$/, ''))
-    : '';
-  const selectedBook = stats?.bookDetails?.[selectedBookId] ?? null;
+  const selectedBookId = useMemo(() => extractBookIdFromPath(path), [path]);
+  const selectedBook = useMemo(() => {
+    if (!stats || !selectedBookId) return null;
+    const normalizedTarget = normalizeBookKey(selectedBookId);
+    const direct = stats.bookDetails[selectedBookId] ?? stats.bookDetails[normalizedTarget];
+    if (direct) return direct;
+
+    const normalizedMap = new Map(
+      Object.entries(stats.bookDetails).map(([bookId, detail]) => [normalizeBookKey(bookId), detail]),
+    );
+    return normalizedMap.get(normalizedTarget) ?? null;
+  }, [stats, selectedBookId]);
 
   const handleBookSelect = useCallback((bookId: string) => {
-    navigate(`/book/${encodeURIComponent(bookId)}`);
-  }, [navigate]);
+    if (!stats) {
+      navigate(`/book/${encodeURIComponent(bookId)}`);
+      return;
+    }
+
+    const normalizedTarget = normalizeBookKey(bookId);
+    const canonicalBookId = Object.keys(stats.bookDetails).find(
+      candidate => normalizeBookKey(candidate) === normalizedTarget,
+    ) ?? bookId;
+
+    navigate(`/book/${encodeURIComponent(canonicalBookId)}`);
+  }, [navigate, stats]);
 
   const handleBackToDashboard = useCallback(() => {
     navigate('/');

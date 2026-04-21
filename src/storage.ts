@@ -33,6 +33,13 @@ function reviveProcessedStatsDates(stats: ProcessedStats): ProcessedStats {
   return {
     ...stats,
     bookDetails: revivedBookDetails,
+    deviceDetails: (stats.deviceDetails || []).map(device => ({
+      ...device,
+      sessions: device.sessions.map(session => ({
+        ...session,
+        endTimestamp: new Date(session.endTimestamp),
+      })),
+    })),
     bookStats: stats.bookStats.map(book => ({
       ...book,
       firstRead: new Date(book.firstRead),

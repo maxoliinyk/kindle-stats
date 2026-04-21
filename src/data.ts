@@ -1,6 +1,6 @@
 import type {
   ParsedData, ProcessedStats, BookStats, DailyReading,
-  HourlyReading, MonthlyReading, StreakInfo, TopSession, BookDetailStats, BookSessionDetail,
+  HourlyReading, MonthlyReading, StreakInfo, TopSession, BookDetailStats, BookSessionDetail, DeviceDetailStats,
 } from './types';
 
 function dateKey(d: Date): string {
@@ -175,6 +175,43 @@ function computeDeviceBreakdown(data: ParsedData): { device: string; totalMs: nu
     .sort((a, b) => b.totalMs - a.totalMs);
 }
 
+function computeDeviceDetails(data: ParsedData): DeviceDetailStats[] {
+  const map = new Map<string, DeviceDetailStats>();
+
+  for (const session of data.deviceSessions) {
+    const device = session.deviceFamily || 'Unknown';
+    if (!map.has(device)) {
+      map.set(device, {
+        device,
+        totalMs: 0,
+        sessionCount: 0,
+        avgSessionMs: 0,
+        sessions: [],
+      });
+    }
+
+    const detail = map.get(device)!;
+    detail.totalMs += session.totalReadingMs;
+    detail.sessionCount += 1;
+    detail.sessions.push({
+      id: `${device}-${session.endTimestamp.toISOString()}-${detail.sessionCount}`,
+      asin: session.asin || '',
+      endTimestamp: session.endTimestamp,
+      durationMs: session.totalReadingMs,
+      contentType: session.contentType || 'Unknown',
+      pageFlips: session.numberOfPageFlips,
+    });
+  }
+
+  const details = Array.from(map.values());
+  for (const detail of details) {
+    detail.avgSessionMs = detail.sessionCount > 0 ? detail.totalMs / detail.sessionCount : 0;
+    detail.sessions.sort((a, b) => b.endTimestamp.getTime() - a.endTimestamp.getTime());
+  }
+
+  return details.sort((a, b) => b.totalMs - a.totalMs);
+}
+
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -292,6 +329,7 @@ export function processData(data: ParsedData): ProcessedStats {
   const streakInfo = computeStreaks(data);
   const topSessions = computeTopSessions(data);
   const deviceBreakdown = computeDeviceBreakdown(data);
+  const deviceDetails = computeDeviceDetails(data);
 
   const totalReadingMs = bookStats.reduce((acc, b) => acc + b.totalReadingMs, 0);
   const totalBooks = bookStats.length;
@@ -310,6 +348,7 @@ export function processData(data: ParsedData): ProcessedStats {
     streakInfo,
     topSessions,
     deviceBreakdown,
+    deviceDetails,
     goals: data.goals,
     completedTitles: data.completedTitles,
     totalReadingMs,
@@ -359,10 +398,6 @@ export function formatMinutesExact(ms: number): string {
   const min = ms / 60000;
   if (min >= 10) return `${min.toFixed(1)} min`;
   return `${min.toFixed(2)} min`;
-}
-
-export function formatHours(ms: number): string {
-  return `${Math.round(ms / 3600000)}h`;
 }
 
 export function msToHours(ms: number): number {

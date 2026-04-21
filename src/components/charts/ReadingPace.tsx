@@ -1,7 +1,7 @@
 import { Line } from 'react-chartjs-2';
 import { msToMinutes } from '../../data';
 import type { DailyReading } from '../../types';
-import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
+import { getSharedChartInteraction, getSharedTooltip, setChartPointerCursor, useChartTheme } from './chartTheme';
 
 interface Props {
   daily: DailyReading[];
@@ -58,9 +58,7 @@ export function ReadingPace({ daily }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     ...getSharedChartInteraction('index'),
-    onHover: (_event: any, elements: any[], chart: any) => {
-      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
-    },
+    onHover: setChartPointerCursor,
     plugins: {
       legend: { display: false },
       tooltip: {

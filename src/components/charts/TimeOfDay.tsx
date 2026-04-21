@@ -1,7 +1,7 @@
 import { Bar } from 'react-chartjs-2';
 import { msToMinutes } from '../../data';
 import type { HourlyReading } from '../../types';
-import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
+import { getSharedChartInteraction, getSharedTooltip, setChartPointerCursor, useChartTheme } from './chartTheme';
 
 interface Props {
   hourly: HourlyReading[];
@@ -45,10 +45,10 @@ export function TimeOfDay({ hourly }: Props) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    ...getSharedChartInteraction('nearest'),
-    onHover: (_event: any, elements: any[], chart: any) => {
-      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
-    },
+    ...getSharedChartInteraction('index'),
+    interaction: { mode: 'index' as const, intersect: false, axis: 'x' as const },
+    hover: { mode: 'index' as const, intersect: false, axis: 'x' as const },
+    onHover: setChartPointerCursor,
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -91,7 +91,7 @@ export function TimeOfDay({ hourly }: Props) {
       </div>
       {peakHourData && (
         <p className="chart-insight">
-          Peak hour: <strong>{labels[peakHourData.hour]}</strong> ({msToMinutes(peakHourData.totalMs)} min)
+          Peak hour: <strong>{labels[peakHourData.hour]}</strong> ({msToMinutes(peakHourData.totalMs)} min). Hover anywhere above the chart columns to inspect each hour.
         </p>
       )}
     </>

@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { formatDurationExactHM, msToHours } from '../../data';
 import type { MonthlyReading } from '../../types';
-import { getSharedChartInteraction, getSharedTooltip, useChartTheme } from './chartTheme';
+import { getSharedChartInteraction, getSharedTooltip, setChartPointerCursor, useChartTheme } from './chartTheme';
 
 interface Props {
   monthly: MonthlyReading[];
@@ -9,7 +10,12 @@ interface Props {
 
 export function BooksPerMonth({ monthly }: Props) {
   const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(Math.max(0, monthly.length - 1));
   const bestMonth = [...monthly].sort((a, b) => b.totalMs - a.totalMs)[0];
+
+  useEffect(() => {
+    setSelectedMonthIndex(Math.max(0, monthly.length - 1));
+  }, [monthly]);
 
   const labels = monthly.map(m => {
     const [year, month] = m.month.split('-');
@@ -54,8 +60,16 @@ export function BooksPerMonth({ monthly }: Props) {
     responsive: true,
     maintainAspectRatio: false,
     ...getSharedChartInteraction('index'),
-    onHover: (_event: any, elements: any[], chart: any) => {
-      chart.canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    interaction: { mode: 'index' as const, intersect: false, axis: 'x' as const },
+    hover: { mode: 'index' as const, intersect: false, axis: 'x' as const },
+    onHover: setChartPointerCursor,
+    onClick: (event: any, elements: any[], chart: any) => {
+      const resolved = elements.length > 0
+        ? elements
+        : chart.getElementsAtEventForMode(event.native ?? event, 'index', { intersect: false }, true);
+      const first = resolved[0];
+      if (!first) return;
+      setSelectedMonthIndex(first.index);
     },
     plugins: {
       legend: {
@@ -90,7 +104,7 @@ export function BooksPerMonth({ monthly }: Props) {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: textColor, font: { family: fontFamily, size: 10 }, maxRotation: 45 },
+        ticks: { color: textColor, font: { family: fontFamily, size: 10 }, maxRotation: 0, maxTicksLimit: 10 },
       },
       y: {
         position: 'left' as const,
@@ -109,15 +123,29 @@ export function BooksPerMonth({ monthly }: Props) {
     },
   };
 
+  const selectedMonth = monthly[selectedMonthIndex];
+  const selectedMonthLabel = labels[selectedMonthIndex];
+  const selectedMonthMinutes = selectedMonth ? Math.round(selectedMonth.totalMs / 60000) : 0;
+  const selectedPerBook = selectedMonth && selectedMonth.uniqueBooks > 0
+    ? Math.round(selectedMonthMinutes / selectedMonth.uniqueBooks)
+    : 0;
 
   return (
     <>
       <div className="chart-container" style={{ height: '280px' }}>
         <Bar data={data as any} options={options as any} />
       </div>
+      {selectedMonth && (
+        <div className="monthly-detail-panel">
+          <strong>{selectedMonthLabel}</strong>
+          <span>{formatDurationExactHM(selectedMonth.totalMs)}</span>
+          <span>{selectedMonth.uniqueBooks} books</span>
+          <span>{selectedMonth.uniqueBooks > 0 ? `${selectedPerBook} min/book` : 'No books'}</span>
+        </div>
+      )}
       {bestMonth && (
         <p className="chart-insight">
-          Best month: <strong>{new Date(`${bestMonth.month}-01`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</strong> ({msToHours(bestMonth.totalMs)}h)
+          Best month: <strong>{new Date(`${bestMonth.month}-01`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</strong> ({msToHours(bestMonth.totalMs)}h). Click a month for details.
         </p>
       )}
     </>
