@@ -38,8 +38,10 @@ ChartJS.register(
 
 // Global Chart.js defaults
 ChartJS.defaults.font.family = "'Inter', sans-serif";
-ChartJS.defaults.animation.duration = 600;
-ChartJS.defaults.animation.easing = 'easeOutQuart';
+if (ChartJS.defaults.animation !== false) {
+  ChartJS.defaults.animation.duration = 600;
+  ChartJS.defaults.animation.easing = 'easeOutQuart';
+}
 
 interface DashboardProps {
   stats: ProcessedStats;
