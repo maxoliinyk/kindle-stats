@@ -3,6 +3,8 @@ import type {
   HourlyReading, MonthlyReading, StreakInfo, TopSession, BookDetailStats, BookSessionDetail, DeviceDetailStats,
 } from './types';
 
+export const MIN_SESSION_MS = 3 * 60 * 1000;
+
 function dateKey(d: Date): string {
   return d.toISOString().split('T')[0];
 }
@@ -222,6 +224,54 @@ function median(values: number[]): number {
   return sorted[middle];
 }
 
+function percentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const clampedP = Math.max(0, Math.min(1, p));
+  const index = (sorted.length - 1) * clampedP;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  const weight = index - lower;
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}
+
+function stdDev(values: number[]): number {
+  if (values.length === 0) return 0;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+function consistencyScore(values: number[]): number {
+  if (values.length <= 1) return values.length === 0 ? 0 : 100;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  if (mean <= 0) return 0;
+  const cv = stdDev(values) / mean;
+  return Math.max(0, Math.min(100, Math.round(100 / (1 + cv))));
+}
+
+function bucketSessionDurations(values: number[]) {
+  const minutes = values.map(value => value / 60000);
+  return minutes.reduce(
+    (acc, value) => {
+      if (value < 5) acc.under5m += 1;
+      else if (value < 15) acc.from5To15m += 1;
+      else if (value < 30) acc.from15To30m += 1;
+      else if (value < 60) acc.from30To60m += 1;
+      else acc.over60m += 1;
+      return acc;
+    },
+    {
+      under5m: 0,
+      from5To15m: 0,
+      from15To30m: 0,
+      from30To60m: 0,
+      over60m: 0,
+    },
+  );
+}
+
 function computeBookDetails(data: ParsedData): Record<string, BookDetailStats> {
   const deviceByAsin = new Map<string, typeof data.deviceSessions>();
   const allDurationsByBook = new Map<string, number[]>();
@@ -257,6 +307,18 @@ function computeBookDetails(data: ParsedData): Record<string, BookDetailStats> {
         avgValidSessionMs: 0,
         medianSessionMs: 0,
         medianValidSessionMs: 0,
+        p25ValidSessionMs: 0,
+        p75ValidSessionMs: 0,
+        shortestSessionMs: 0,
+        longestSessionMs: 0,
+        consistencyScore: 0,
+        sessionDurationBuckets: {
+          under5m: 0,
+          from5To15m: 0,
+          from15To30m: 0,
+          from30To60m: 0,
+          over60m: 0,
+        },
         uniqueDays: 0,
         firstRead: new Date(sessionDate),
         lastRead: new Date(sessionDate),
@@ -284,23 +346,21 @@ function computeBookDetails(data: ParsedData): Record<string, BookDetailStats> {
     if (deviceFamily && !detail.deviceFamilies.includes(deviceFamily)) detail.deviceFamilies.push(deviceFamily);
     if (contentType && !detail.contentTypes.includes(contentType)) detail.contentTypes.push(contentType);
 
-    if (session.totalReadingMs > 60000) {
-      detail.validSessionCount += 1;
-      const sessionId = `${key}-${session.endTime.toISOString()}-${detail.validSessionCount}`;
-      const sessionDetail: BookSessionDetail = {
-        id: sessionId,
-        asin: session.asin || '',
-        personalDocumentId: session.personalDocumentId || '',
-        startTime: session.startTime,
-        endTime: session.endTime,
-        durationMs: session.totalReadingMs,
-        readingMarketplace: session.readingMarketplace || '',
-        deviceFamily,
-        contentType,
-        pageFlips,
-      };
-      detail.sessions.push(sessionDetail);
-    }
+    detail.validSessionCount += 1;
+    const sessionId = `${key}-${session.endTime.toISOString()}-${detail.validSessionCount}`;
+    const sessionDetail: BookSessionDetail = {
+      id: sessionId,
+      asin: session.asin || '',
+      personalDocumentId: session.personalDocumentId || '',
+      startTime: session.startTime,
+      endTime: session.endTime,
+      durationMs: session.totalReadingMs,
+      readingMarketplace: session.readingMarketplace || '',
+      deviceFamily,
+      contentType,
+      pageFlips,
+    };
+    detail.sessions.push(sessionDetail);
   }
 
   for (const detail of details.values()) {
@@ -313,6 +373,12 @@ function computeBookDetails(data: ParsedData): Record<string, BookDetailStats> {
       : 0;
     detail.medianSessionMs = median(allDurations);
     detail.medianValidSessionMs = median(validDurations);
+    detail.p25ValidSessionMs = percentile(validDurations, 0.25);
+    detail.p75ValidSessionMs = percentile(validDurations, 0.75);
+    detail.shortestSessionMs = validDurations.length > 0 ? Math.min(...validDurations) : 0;
+    detail.longestSessionMs = validDurations.length > 0 ? Math.max(...validDurations) : 0;
+    detail.consistencyScore = consistencyScore(validDurations);
+    detail.sessionDurationBuckets = bucketSessionDurations(validDurations);
     detail.uniqueDays = (uniqueDaysByBook.get(detail.id) ?? new Set()).size;
     detail.avgPageFlipsPerSession = detail.validSessionCount > 0 ? detail.totalPageFlips / detail.validSessionCount : 0;
   }
@@ -321,22 +387,28 @@ function computeBookDetails(data: ParsedData): Record<string, BookDetailStats> {
 }
 
 export function processData(data: ParsedData): ProcessedStats {
-  const bookStats = computeBookStats(data);
-  const bookDetails = computeBookDetails(data);
-  const dailyReadings = computeDailyReadings(data);
-  const hourlyReadings = computeHourlyReadings(data);
-  const monthlyReadings = computeMonthlyReadings(data);
-  const streakInfo = computeStreaks(data);
-  const topSessions = computeTopSessions(data);
-  const deviceBreakdown = computeDeviceBreakdown(data);
-  const deviceDetails = computeDeviceDetails(data);
+  const filteredData: ParsedData = {
+    ...data,
+    readingSessions: data.readingSessions.filter(session => session.totalReadingMs >= MIN_SESSION_MS),
+    deviceSessions: data.deviceSessions.filter(session => session.totalReadingMs >= MIN_SESSION_MS),
+  };
+
+  const bookStats = computeBookStats(filteredData);
+  const bookDetails = computeBookDetails(filteredData);
+  const dailyReadings = computeDailyReadings(filteredData);
+  const hourlyReadings = computeHourlyReadings(filteredData);
+  const monthlyReadings = computeMonthlyReadings(filteredData);
+  const streakInfo = computeStreaks(filteredData);
+  const topSessions = computeTopSessions(filteredData);
+  const deviceBreakdown = computeDeviceBreakdown(filteredData);
+  const deviceDetails = computeDeviceDetails(filteredData);
 
   const totalReadingMs = bookStats.reduce((acc, b) => acc + b.totalReadingMs, 0);
   const totalBooks = bookStats.length;
   const totalDaysActive = dailyReadings.filter(d => d.totalMs > 0).length;
   const avgPerDayMs = totalDaysActive > 0 ? totalReadingMs / totalDaysActive : 0;
 
-  const totalSessions = data.readingSessions.length;
+  const totalSessions = filteredData.readingSessions.length;
   const avgPerSessionMs = totalSessions > 0 ? totalReadingMs / totalSessions : 0;
 
   return {
