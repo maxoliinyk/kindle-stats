@@ -18,6 +18,18 @@ function formatDateTime(value: Date | null): string {
 }
 
 export function BookDetailsPage({ book, onBack }: BookDetailsPageProps) {
+  const durationSpreadMs = Math.max(0, book.p75ValidSessionMs - book.p25ValidSessionMs);
+  const sessionBuckets = [
+    { label: '< 5m', count: book.sessionDurationBuckets.under5m },
+    { label: '5-15m', count: book.sessionDurationBuckets.from5To15m },
+    { label: '15-30m', count: book.sessionDurationBuckets.from15To30m },
+    { label: '30-60m', count: book.sessionDurationBuckets.from30To60m },
+    { label: '60m+', count: book.sessionDurationBuckets.over60m },
+  ];
+  const formatBucketShare = (count: number) => (
+    book.validSessionCount > 0 ? `${Math.round((count / book.validSessionCount) * 100)}%` : '0%'
+  );
+
   return (
     <div className="dashboard">
       <div className="book-details-header">
@@ -39,7 +51,7 @@ export function BookDetailsPage({ book, onBack }: BookDetailsPageProps) {
         <div className="kpi-card">
           <div className="kpi-label">Sessions</div>
           <div className="kpi-value">{book.validSessionCount}</div>
-          <div className="kpi-sub">{book.sessionCount} total raw sessions</div>
+          <div className="kpi-sub">{book.sessionCount} total sessions</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Average Session</div>
@@ -49,11 +61,34 @@ export function BookDetailsPage({ book, onBack }: BookDetailsPageProps) {
         <div className="kpi-card">
           <div className="kpi-label">Page Flips</div>
           <div className="kpi-value">{book.totalPageFlips.toLocaleString('en-US')}</div>
-          <div className="kpi-sub">Avg {Math.round(book.avgPageFlipsPerSession)} per valid session</div>
+          <div className="kpi-sub">Avg {Math.round(book.avgPageFlipsPerSession)} per session</div>
         </div>
       </div>
 
       <div className="book-details-sections">
+        <div className="chart-card full-width">
+          <h3>Session Quality</h3>
+          <div className="book-meta-grid">
+            <div><strong>Shortest session:</strong> {formatDurationExactHM(book.shortestSessionMs)}</div>
+            <div><strong>Longest session:</strong> {formatDurationExactHM(book.longestSessionMs)}</div>
+            <div><strong>Short-session marker (25% point):</strong> {formatDurationExactHM(book.p25ValidSessionMs)}</div>
+            <div><strong>Long-session marker (75% point):</strong> {formatDurationExactHM(book.p75ValidSessionMs)}</div>
+            <div><strong>Typical range width:</strong> {formatDurationExactHM(durationSpreadMs)}</div>
+            <div><strong>Consistency score:</strong> {book.consistencyScore}/100</div>
+          </div>
+        </div>
+
+        <div className="chart-card full-width">
+          <h3>Session Duration Buckets</h3>
+          <div className="book-meta-grid">
+            {sessionBuckets.map(bucket => (
+              <div key={bucket.label}>
+                <strong>{bucket.label}:</strong> {bucket.count} sessions ({formatBucketShare(bucket.count)})
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="chart-card full-width">
           <h3>Book Metadata</h3>
           <div className="book-meta-grid">
@@ -69,7 +104,7 @@ export function BookDetailsPage({ book, onBack }: BookDetailsPageProps) {
         </div>
 
         <div className="chart-card full-width">
-          <h3>All Sessions ({book.validSessionCount})</h3>
+          <h3>Sessions ({book.validSessionCount})</h3>
           <div className="book-session-list">
             {book.sessions.map((session) => (
               <div key={session.id} className="book-session-item">

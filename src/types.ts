@@ -109,6 +109,14 @@ export interface BookSessionDetail {
   pageFlips: number;
 }
 
+export interface SessionDurationBuckets {
+  under5m: number;
+  from5To15m: number;
+  from15To30m: number;
+  from30To60m: number;
+  over60m: number;
+}
+
 export interface BookDetailStats {
   id: string;
   name: string;
@@ -121,6 +129,12 @@ export interface BookDetailStats {
   avgValidSessionMs: number;
   medianSessionMs: number;
   medianValidSessionMs: number;
+  p25ValidSessionMs: number;
+  p75ValidSessionMs: number;
+  shortestSessionMs: number;
+  longestSessionMs: number;
+  consistencyScore: number;
+  sessionDurationBuckets: SessionDurationBuckets;
   uniqueDays: number;
   firstRead: Date;
   lastRead: Date;
@@ -160,3 +174,14 @@ export interface ProcessedStats {
 }
 
 export type ThemeMode = 'auto' | 'light' | 'dark';
+
+export type Skin = 'kindle' | 'modern';
+export type KindleMode = 'paper' | 'sepia' | 'night';
+export type ModernMode = 'light' | 'dark';
+export type AppearanceMode = KindleMode | ModernMode;
+
+export interface AppearanceState {
+  skin: Skin;
+  kindleMode: KindleMode;
+  modernMode: ModernMode;
+}

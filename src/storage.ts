@@ -1,10 +1,11 @@
 import type { ProcessedStats } from './types';
 
 export const THEME_STORAGE_KEY = 'kindle-stats-theme';
+export const APPEARANCE_STORAGE_KEY = 'kindle-stats.appearance';
 export const STATS_STORAGE_KEY = 'kindle-stats-stats-v1';
 
 interface PersistedStatsPayload {
-  version: 2;
+  version: 4;
   savedAt: string;
   stats: ProcessedStats;
 }
@@ -54,7 +55,7 @@ function reviveProcessedStatsDates(stats: ProcessedStats): ProcessedStats {
 
 function isValidPersistedPayload(value: unknown): value is PersistedStatsPayload {
   if (!isObjectLike(value)) return false;
-  if (value.version !== 2) return false;
+  if (value.version !== 4) return false;
   if (typeof value.savedAt !== 'string') return false;
   if (!isObjectLike(value.stats)) return false;
   return true;
@@ -62,7 +63,7 @@ function isValidPersistedPayload(value: unknown): value is PersistedStatsPayload
 
 export function saveStats(stats: ProcessedStats): void {
   const payload: PersistedStatsPayload = {
-    version: 2,
+    version: 4,
     savedAt: new Date().toISOString(),
     stats,
   };

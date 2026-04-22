@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { formatDuration, formatDurationExactHM } from '../../data';
 import type { DeviceDetailStats } from '../../types';
-import { CHART_COLORS, getSharedChartInteraction, getSharedTooltip, setChartPointerCursor, useChartTheme } from './chartTheme';
+import { getSharedChartInteraction, getSharedTooltip, setChartPointerCursor, useChartTheme } from './chartTheme';
 
 interface Props {
   breakdown: { device: string; totalMs: number }[];
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function DeviceBreakdown({ breakdown, details }: Props) {
-  const { textColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
+  const { textColor, fontFamily, tooltipBg, tooltipText, tooltipBorder, tooltipRadius, palette, skin } = useChartTheme();
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const totalMs = breakdown.reduce((acc, item) => acc + item.totalMs, 0);
   const topDevice = breakdown[0];
@@ -26,9 +26,10 @@ export function DeviceBreakdown({ breakdown, details }: Props) {
     labels: breakdown.map(d => d.device),
     datasets: [{
       data: breakdown.map(d => Math.round(d.totalMs / 60000)),
-      backgroundColor: CHART_COLORS.slice(0, breakdown.length),
-      borderWidth: 0,
-      hoverBorderColor: 'rgba(255, 255, 255, 0.95)',
+      backgroundColor: palette.slice(0, breakdown.length),
+      borderWidth: skin === 'kindle' ? 1 : 0,
+      borderColor: skin === 'kindle' ? 'var(--bg-card)' : undefined,
+      hoverBorderColor: skin === 'kindle' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.95)',
       hoverBorderWidth: 2,
       hoverOffset: 4,
     }],
@@ -62,7 +63,7 @@ export function DeviceBreakdown({ breakdown, details }: Props) {
         },
       },
       tooltip: {
-        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily, tooltipRadius),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;

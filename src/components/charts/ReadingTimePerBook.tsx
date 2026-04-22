@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function ReadingTimePerBook({ books, onBookSelect }: Props) {
-  const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
+  const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder, tooltipRadius, accent, skin } = useChartTheme();
   const chartRef = useRef<ChartJS<'bar'> | null>(null);
   const top = books.slice(0, 15);
   const totalMs = top.reduce((acc, book) => acc + book.totalReadingMs, 0);
@@ -36,13 +36,13 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
     }),
     datasets: [{
       data: top.map(b => msToHours(b.totalReadingMs)),
-      backgroundColor: 'rgba(10, 132, 255, 0.7)',
-      borderColor: 'rgba(10, 132, 255, 1)',
+      backgroundColor: skin === 'kindle' ? accent : 'rgba(10, 132, 255, 0.7)',
+      borderColor: skin === 'kindle' ? accent : 'rgba(10, 132, 255, 1)',
       borderWidth: 1,
-      hoverBackgroundColor: 'rgba(10, 132, 255, 0.9)',
-      hoverBorderColor: 'rgba(100, 210, 255, 1)',
+      hoverBackgroundColor: skin === 'kindle' ? accent : 'rgba(10, 132, 255, 0.9)',
+      hoverBorderColor: skin === 'kindle' ? accent : 'rgba(100, 210, 255, 1)',
       hoverBorderWidth: 2,
-      borderRadius: 4,
+      borderRadius: skin === 'kindle' ? 0 : 4,
       barThickness: 20,
     }],
   };
@@ -74,7 +74,7 @@ export function ReadingTimePerBook({ books, onBookSelect }: Props) {
     plugins: {
       legend: { display: false },
       tooltip: {
-        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily, tooltipRadius),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;

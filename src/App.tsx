@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useTheme } from './hooks/useTheme';
+import { useAppearance } from './hooks/useAppearance';
 import { parseDroppedFolder } from './parser';
 import { processData } from './data';
 import { loadStats, saveStats, clearStats } from './storage';
-import { ThemeToggle } from './components/ThemeToggle';
+import { SettingsMenu } from './components/SettingsMenu';
 import { DropZone } from './components/DropZone';
 import { Dashboard } from './components/Dashboard';
 import { BookDetailsPage } from './components/BookDetailsPage';
@@ -47,7 +47,7 @@ function normalizeBookKey(value: string): string {
 }
 
 export default function App() {
-  const { mode, setMode } = useTheme();
+  const appearance = useAppearance();
   const [state, setState] = useState<AppState>('idle');
   const [stats, setStats] = useState<ProcessedStats | null>(null);
   const [error, setError] = useState<string>('');
@@ -149,10 +149,24 @@ export default function App() {
       <header className="header">
         <div className="header-inner">
           <h1 className="header-title">
-            <span>📖</span> Kindle Stats
+            <span aria-hidden="true">📖</span>
+            <span className="header-title-glyph" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 1 4 15.5z" />
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v3H6.5A2.5 2.5 0 0 1 4 17.5z" />
+              </svg>
+            </span>
+            <span className="header-title-text">Kindle Stats</span>
           </h1>
           <div className="header-actions">
-            <ThemeToggle mode={mode} setMode={setMode} />
+            <SettingsMenu
+              skin={appearance.skin}
+              kindleMode={appearance.kindleMode}
+              modernMode={appearance.modernMode}
+              setSkin={appearance.setSkin}
+              setKindleMode={appearance.setKindleMode}
+              setModernMode={appearance.setModernMode}
+            />
           </div>
         </div>
       </header>
