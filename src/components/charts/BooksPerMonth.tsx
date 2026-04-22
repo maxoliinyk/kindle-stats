@@ -2,14 +2,23 @@ import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { formatDurationExactHM, msToHours } from '../../data';
 import type { MonthlyReading } from '../../types';
+import { useAppearance } from '../../hooks/useAppearance';
 import { getSharedChartInteraction, getSharedTooltip, setChartPointerCursor, useChartTheme } from './chartTheme';
 
 interface Props {
   monthly: MonthlyReading[];
 }
 
+const KINDLE_MONTHLY_COLORS: Record<string, { bars: string; line: string }> = {
+  paper: { bars: '#D4A14A', line: '#5D340C' },
+  sepia: { bars: '#B88549', line: '#3E1E0B' },
+  night: { bars: '#A47A42', line: '#F2CE86' },
+};
+
 export function BooksPerMonth({ monthly }: Props) {
-  const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
+  const { textColor, gridColor, fontFamily, tooltipBg, tooltipText, tooltipBorder, tooltipRadius, accent, skin } = useChartTheme();
+  const { mode } = useAppearance();
+  const kindleMonthly = KINDLE_MONTHLY_COLORS[mode] ?? KINDLE_MONTHLY_COLORS.paper;
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(Math.max(0, monthly.length - 1));
   const bestMonth = [...monthly].sort((a, b) => b.totalMs - a.totalMs)[0];
 
@@ -29,11 +38,11 @@ export function BooksPerMonth({ monthly }: Props) {
       {
         label: 'Reading Hours',
         data: monthly.map(m => msToHours(m.totalMs)),
-        backgroundColor: 'rgba(10, 132, 255, 0.7)',
-        hoverBackgroundColor: 'rgba(10, 132, 255, 0.9)',
-        hoverBorderColor: 'rgba(100, 210, 255, 1)',
+        backgroundColor: skin === 'kindle' ? kindleMonthly.bars : 'rgba(10, 132, 255, 0.7)',
+        hoverBackgroundColor: skin === 'kindle' ? accent : 'rgba(10, 132, 255, 0.9)',
+        hoverBorderColor: skin === 'kindle' ? kindleMonthly.line : 'rgba(100, 210, 255, 1)',
         hoverBorderWidth: 2,
-        borderRadius: 4,
+        borderRadius: skin === 'kindle' ? 0 : 4,
         yAxisID: 'y',
         order: 2,
       },
@@ -41,12 +50,13 @@ export function BooksPerMonth({ monthly }: Props) {
         label: 'Unique Books',
         data: monthly.map(m => m.uniqueBooks),
         type: 'line' as const,
-        borderColor: 'rgba(48, 209, 88, 1)',
-        backgroundColor: 'rgba(48, 209, 88, 0.1)',
+        borderColor: skin === 'kindle' ? kindleMonthly.line : 'rgba(48, 209, 88, 1)',
+        backgroundColor: skin === 'kindle' ? 'rgba(0,0,0,0)' : 'rgba(48, 209, 88, 0.1)',
         pointRadius: 4,
         pointHoverRadius: 8,
         pointHoverBorderWidth: 3,
-        pointHoverBackgroundColor: '#ffffff',
+        pointHoverBackgroundColor: skin === 'kindle' ? kindleMonthly.line : '#ffffff',
+        pointBackgroundColor: skin === 'kindle' ? 'rgba(0,0,0,0)' : undefined,
         borderWidth: 2,
         hitRadius: 12,
         tension: 0.3,
@@ -82,7 +92,7 @@ export function BooksPerMonth({ monthly }: Props) {
         },
       },
       tooltip: {
-        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily, tooltipRadius),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;

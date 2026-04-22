@@ -174,3 +174,14 @@ export interface ProcessedStats {
 }
 
 export type ThemeMode = 'auto' | 'light' | 'dark';
+
+export type Skin = 'kindle' | 'modern';
+export type KindleMode = 'paper' | 'sepia' | 'night';
+export type ModernMode = 'light' | 'dark';
+export type AppearanceMode = KindleMode | ModernMode;
+
+export interface AppearanceState {
+  skin: Skin;
+  kindleMode: KindleMode;
+  modernMode: ModernMode;
+}

@@ -1,6 +1,7 @@
 import type { ProcessedStats } from './types';
 
 export const THEME_STORAGE_KEY = 'kindle-stats-theme';
+export const APPEARANCE_STORAGE_KEY = 'kindle-stats.appearance';
 export const STATS_STORAGE_KEY = 'kindle-stats-stats-v1';
 
 interface PersistedStatsPayload {

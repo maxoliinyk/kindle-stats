@@ -11,17 +11,16 @@ export function CalendarHeatmap({ daily }: Props) {
   const [pinnedDate, setPinnedDate] = useState<string | null>(null);
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
 
-  const { cells, months, maxMs } = useMemo(() => {
+  const { cells, months, maxMs, columns } = useMemo(() => {
     const dayMap = new Map<string, number>();
     for (const d of daily) {
       dayMap.set(d.date, d.totalMs);
     }
 
-    // Get range: 52 weeks back from today
     const today = new Date();
     const start = new Date(today);
     start.setDate(today.getDate() - 364);
-    start.setDate(start.getDate() - start.getDay()); // Start on Sunday
+    start.setDate(start.getDate() - start.getDay());
 
     const cells: { date: string; ms: number; dayOfWeek: number }[] = [];
     let maxMs = 0;
@@ -35,23 +34,31 @@ export function CalendarHeatmap({ daily }: Props) {
       current.setDate(current.getDate() + 1);
     }
 
-    // Compute month labels
-    const months: { label: string; col: number }[] = [];
+    const columns = Math.ceil(cells.length / 7);
+
+    const MIN_COLS_BETWEEN = 3;
+    const rawMonths: { label: string; col: number }[] = [];
     let lastMonth = -1;
     let col = 0;
     for (let i = 0; i < cells.length; i++) {
       if (cells[i].dayOfWeek === 0 && i > 0) col++;
       const m = new Date(cells[i].date).getMonth();
       if (m !== lastMonth && cells[i].dayOfWeek === 0) {
-        months.push({
+        rawMonths.push({
           label: new Date(cells[i].date).toLocaleDateString('en-US', { month: 'short' }),
           col,
         });
         lastMonth = m;
       }
     }
+    const months = rawMonths.filter((entry, idx) => {
+      const next = rawMonths[idx + 1];
+      if (next && next.col - entry.col < MIN_COLS_BETWEEN) return false;
+      if (!next && columns - entry.col < MIN_COLS_BETWEEN) return false;
+      return true;
+    });
 
-    return { cells, months, maxMs };
+    return { cells, months, maxMs, columns };
   }, [daily]);
 
   const percentiles = useMemo(() => {
@@ -78,7 +85,7 @@ export function CalendarHeatmap({ daily }: Props) {
   function getIntensityLabel(ms: number): string {
     if (ms <= 0) return 'No reading';
     const minutes = Math.round(ms / 60000);
-    if (minutes <= 15) return 'Light';
+    if (minutes <= 20) return 'Light';
     if (minutes <= 45) return 'Medium';
     if (minutes <= 120) return 'Heavy';
     return 'Very heavy';
@@ -107,12 +114,19 @@ export function CalendarHeatmap({ daily }: Props) {
     }
   }, [pinnedDate]);
 
+  const gridStyle = { '--heatmap-columns': columns } as React.CSSProperties;
+
   return (
-    <div className="heatmap-root">
+    <div className="heatmap-root" style={gridStyle}>
       {months.length > 0 && (
         <div className="heatmap-months">
           {months.map(month => (
-            <span key={`${month.label}-${month.col}`}>{month.label}</span>
+            <span
+              key={`${month.label}-${month.col}`}
+              style={{ gridColumn: `${month.col + 1} / span 1` }}
+            >
+              {month.label}
+            </span>
           ))}
         </div>
       )}
@@ -140,7 +154,7 @@ export function CalendarHeatmap({ daily }: Props) {
         onMouseMove={handleWrapperMove}
         onMouseLeave={handleWrapperLeave}
       >
-        <div className="heatmap-grid">
+        <div className="heatmap-grid" style={gridStyle}>
           {cells.map((cell, i) => (
             <div
               key={i}

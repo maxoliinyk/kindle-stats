@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,6 +23,7 @@ import { BooksPerMonth } from './charts/BooksPerMonth';
 import { ReadingGoals } from './charts/ReadingGoals';
 import { ReadingStreaks } from './charts/ReadingStreaks';
 import { LongestSessions } from './charts/LongestSessions';
+import { useAppearance } from '../hooks/useAppearance';
 
 ChartJS.register(
   CategoryScale,
@@ -36,8 +38,6 @@ ChartJS.register(
   Filler,
 );
 
-// Global Chart.js defaults
-ChartJS.defaults.font.family = "'Inter', sans-serif";
 if (ChartJS.defaults.animation !== false) {
   ChartJS.defaults.animation.duration = 600;
   ChartJS.defaults.animation.easing = 'easeOutQuart';
@@ -50,6 +50,17 @@ interface DashboardProps {
 }
 
 export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
+  const { skin } = useAppearance();
+
+  useEffect(() => {
+    const fontFamily = getComputedStyle(document.documentElement)
+      .getPropertyValue('--font-ui')
+      .trim();
+    if (fontFamily) {
+      ChartJS.defaults.font.family = fontFamily;
+    }
+  }, [skin]);
+
   return (
     <div className="dashboard">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -62,7 +73,7 @@ export function Dashboard({ stats, onReload, onBookSelect }: DashboardProps) {
           </p>
         </div>
         <button className="reload-btn" onClick={onReload}>
-          ↻ Load New Data
+          {skin === 'kindle' ? 'Load new data' : '↻ Load New Data'}
         </button>
       </div>
 

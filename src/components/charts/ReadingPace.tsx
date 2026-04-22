@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function ReadingPace({ daily }: Props) {
-  const { textColor, gridColor, fontFamily, accent, tooltipBg, tooltipText, tooltipBorder } = useChartTheme();
+  const { textColor, gridColor, fontFamily, accent, tooltipBg, tooltipText, tooltipBorder, tooltipRadius, skin } = useChartTheme();
 
   // Compute weekly rolling average
   const withDays = daily.filter(d => d.totalMs > 0);
@@ -42,13 +42,15 @@ export function ReadingPace({ daily }: Props) {
       label: 'Avg daily reading (min)',
       data: weeks.map(w => msToMinutes(w.avgMs)),
       borderColor: accent,
-      backgroundColor: `rgba(${accent === '#0A84FF' || accent === '#007AFF' ? '10, 132, 255' : '0, 122, 255'}, 0.1)`,
-      fill: true,
+      backgroundColor: skin === 'kindle'
+        ? 'rgba(0,0,0,0)'
+        : `rgba(${accent === '#0A84FF' || accent === '#007AFF' ? '10, 132, 255' : '0, 122, 255'}, 0.1)`,
+      fill: skin !== 'kindle',
       tension: 0.4,
       pointRadius: 4,
       pointHoverRadius: 8,
       pointHoverBorderWidth: 3,
-      pointHoverBackgroundColor: '#ffffff',
+      pointHoverBackgroundColor: skin === 'kindle' ? accent : '#ffffff',
       borderWidth: 2,
       hitRadius: 12,
     }],
@@ -62,7 +64,7 @@ export function ReadingPace({ daily }: Props) {
     plugins: {
       legend: { display: false },
       tooltip: {
-        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily),
+        ...getSharedTooltip(tooltipBg, tooltipText, tooltipBorder, fontFamily, tooltipRadius),
         callbacks: {
           title: (items: any[]) => {
             const idx = items[0]?.dataIndex ?? 0;
